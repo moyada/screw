@@ -1,4 +1,4 @@
-package cn.xyk.screw.utils;
+package cn.xyk.screw.tools;
 
 import cn.xyk.screw.model.OrderDO;
 import com.sun.javafx.binding.StringFormatter;
@@ -10,7 +10,7 @@ import java.lang.reflect.Type;
  * 生成insert or update 语句
  * Created by xueyikang on 2017/2/20.
  */
-public class SQLUtil {
+public class SQLBuilder {
     private String idFormat = "    <result id=\"%s\" property=\"%s\"/>";
     private String columnFormat = "    <result column=\"%s\" property=\"%s\"/>";
 
