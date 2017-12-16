@@ -3,6 +3,9 @@ package cn.xyk.screw.parser;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.gson.*;
+import com.google.gson.JsonParser;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Type;
 import java.util.*;
@@ -10,10 +13,11 @@ import java.util.*;
 /**
  * Created by xueyikang on 2017/12/15.
  */
-public class GsonParser extends JsonParser {
+public class GsonParser extends cn.xyk.screw.parser.JsonParser {
+    private static final Logger log = LoggerFactory.getLogger(GsonParser.class);
 
     private final Gson gson;
-    private final com.google.gson.JsonParser parser;
+    private final JsonParser parser;
 
     public GsonParser() {
         GsonBuilder builder = new GsonBuilder();
@@ -24,7 +28,7 @@ public class GsonParser extends JsonParser {
             }
         });
         gson = builder.create();
-        parser = new com.google.gson.JsonParser();
+        parser = new JsonParser();
     }
 
     private final <C> C toObject(JsonElement ele, Class<C> c) {
@@ -32,6 +36,7 @@ public class GsonParser extends JsonParser {
         try  {
            obj = gson.fromJson(ele, c);
         } catch (Exception e) {
+            log.error("Deserialization Object Error: " + e);
             return null;
         }
         return obj;
@@ -48,6 +53,7 @@ public class GsonParser extends JsonParser {
         try  {
             obj = gson.fromJson(json, c);
         } catch (Exception e) {
+            log.error("Deserialization Object Error: " + e);
             return null;
         }
         return obj;
@@ -60,6 +66,7 @@ public class GsonParser extends JsonParser {
             jsonArray = parser.parse(json).getAsJsonArray();
         }
         catch (IllegalStateException e) {
+            log.error("Deserialization List Error: " + e);
             return null;
         }
         int length = jsonArray.size();
@@ -85,6 +92,7 @@ public class GsonParser extends JsonParser {
             jsonObject = parser.parse(json).getAsJsonObject();
         }
         catch (IllegalStateException e) {
+            log.error("Deserialization Map Error: " + e);
             return null;
         }
         Set<Map.Entry<String, JsonElement>> jsonSet = jsonObject.entrySet();
@@ -113,6 +121,7 @@ public class GsonParser extends JsonParser {
             jsonObject = parser.parse(json).getAsJsonObject();
         }
         catch (IllegalStateException e) {
+            log.error("Deserialization LinkedHashMapList Error: " + e);
             return null;
         }
         Set<Map.Entry<String, JsonElement>> jsonSet = jsonObject.entrySet();
@@ -155,6 +164,7 @@ public class GsonParser extends JsonParser {
             jsonObject = parser.parse(json).getAsJsonObject();
         }
         catch (IllegalStateException e) {
+            log.error("Deserialization HashMapList Error: " + e);
             return null;
         }
         Set<Map.Entry<String, JsonElement>> jsonSet = jsonObject.entrySet();

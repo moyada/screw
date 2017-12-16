@@ -8,6 +8,8 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.type.CollectionType;
 import com.fasterxml.jackson.databind.type.MapType;
 import com.fasterxml.jackson.databind.type.TypeFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.*;
@@ -17,6 +19,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * Created by xueyikang on 2017/12/16.
  */
 public class JacksonParser extends JsonParser {
+    private static final Logger log = LoggerFactory.getLogger(JacksonParser.class);
 
     private final ObjectMapper mapper;
     private final TypeFactory typeFactory;
@@ -24,13 +27,14 @@ public class JacksonParser extends JsonParser {
     private final Map<String, CollectionType> collectionTypeMap;
     private final Map<String, MapType> mapTypeMap;
 
-    public JacksonParser() throws IOException {
+    public JacksonParser() {
         this.mapper = new ObjectMapper();
         this.mapper.configure(SerializationFeature.WRAP_ROOT_VALUE, true);
+        this.mapper.configure(SerializationFeature.WRITE_SINGLE_ELEM_ARRAYS_UNWRAPPED, true);
         this.mapper.configure(DeserializationFeature.UNWRAP_ROOT_VALUE, true);
+        this.mapper.configure(DeserializationFeature.UNWRAP_SINGLE_VALUE_ARRAYS, true);
         this.mapper.configure(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY, true);
         this.typeFactory = this.mapper.getTypeFactory();
-
         this.collectionTypeMap = new ConcurrentHashMap<>(32);
         this.mapTypeMap = new ConcurrentHashMap<>(32);
     }
@@ -41,6 +45,7 @@ public class JacksonParser extends JsonParser {
         try {
             json = this.mapper.writeValueAsString(obj);
         } catch (JsonProcessingException e) {
+            log.error("Serialization Json Error: " + e);
             return null;
         }
         return json;
@@ -52,6 +57,7 @@ public class JacksonParser extends JsonParser {
         try {
             obj = this.mapper.readValue(json, c);
         } catch (IOException e) {
+            log.error("Deserialization Object Error: " + e);
             return null;
         }
         return obj;
@@ -63,6 +69,7 @@ public class JacksonParser extends JsonParser {
         try {
             list = this.mapper.readValue(json, this.collectionTypeGenerator(clazz));
         } catch (IOException e) {
+            log.error("Deserialization ArrayList Error: " + e);
             return null;
         }
         return list;
@@ -74,6 +81,7 @@ public class JacksonParser extends JsonParser {
         try {
             map = this.mapper.readValue(json, this.mapTypeGenerator(t, u));
         } catch (IOException e) {
+            log.error("Deserialization HashMap Error: " + e);
             return null;
         }
         return map;
@@ -85,6 +93,7 @@ public class JacksonParser extends JsonParser {
         try {
             map = this.mapper.readValue(json, this.linkmapListTypeGenerator(t, u));
         } catch (IOException e) {
+            log.error("Deserialization LinkedHashMapList Error: " + e);
             return null;
         }
         return map;
@@ -96,6 +105,7 @@ public class JacksonParser extends JsonParser {
         try {
             map = this.mapper.readValue(json, this.mapListTypeGenerator(t, u));
         } catch (IOException e) {
+            log.error("Deserialization HashMapList Error: " + e);
             return null;
         }
         return map;
