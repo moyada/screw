@@ -28,9 +28,6 @@ public class GsonParser extends JsonParser {
     }
 
     private final <C> C toObject(JsonElement ele, Class<C> c) {
-        if(EMPTY_OBJECT.equals(ele.toString())) {
-            return null;
-        }
         C obj;
         try  {
            obj = gson.fromJson(ele, c);

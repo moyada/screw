@@ -9,8 +9,6 @@ import java.util.Map;
  */
 public abstract class JsonParser {
 
-    static final String EMPTY_OBJECT = "{}";
-
     public abstract String toJson(Object obj);
 
     public abstract <C> C toObject(String json, Class<C> c);
