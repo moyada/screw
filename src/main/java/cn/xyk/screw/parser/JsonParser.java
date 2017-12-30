@@ -13,6 +13,8 @@ public abstract class JsonParser {
 
     public abstract <C> C toObject(String json, Class<C> c);
 
+    public abstract <C> C[] toArray(String json, Class<C> c);
+
     public abstract <C> List<C> toList(String json, Class<C> c);
 
     public abstract <T, U> Map<T, U> toMap(String json, Class<T> t, Class<U> u);

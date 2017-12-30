@@ -7,6 +7,7 @@ import com.google.gson.JsonParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.lang.reflect.Array;
 import java.lang.reflect.Type;
 import java.util.*;
 
@@ -57,6 +58,34 @@ public class GsonParser extends cn.xyk.screw.parser.JsonParser {
             return null;
         }
         return obj;
+    }
+
+    @SuppressWarnings("unchecked")
+    @Override
+    public <C> C[] toArray(String json, Class<C> c) {
+        JsonArray jsonArray;
+        try {
+            jsonArray = parser.parse(json).getAsJsonArray();
+        }
+        catch (IllegalStateException e) {
+            log.error("Deserialization List Error: " + e);
+            return null;
+        }
+        int length = jsonArray.size();
+        if(0 == length) {
+            return (C[]) Array.newInstance(c, 0);
+        }
+        C value;
+        C[] array = (C[]) Array.newInstance(c, length);
+
+        for(int index = 0; index < length; index++) {
+            value = this.toObject(jsonArray.get(index), c);
+            if(null == value) {
+                continue;
+            }
+            array[index] = value;
+        }
+        return array;
     }
 
     @Override

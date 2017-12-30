@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.type.ArrayType;
 import com.fasterxml.jackson.databind.type.CollectionType;
 import com.fasterxml.jackson.databind.type.MapType;
 import com.fasterxml.jackson.databind.type.TypeFactory;
@@ -24,17 +25,23 @@ public class JacksonParser extends JsonParser {
     private final ObjectMapper mapper;
     private final TypeFactory typeFactory;
 
+    private final Map<String, ArrayType> arrayTypeMap;
     private final Map<String, CollectionType> collectionTypeMap;
     private final Map<String, MapType> mapTypeMap;
 
     public JacksonParser() {
         this.mapper = new ObjectMapper();
-        this.mapper.configure(SerializationFeature.WRAP_ROOT_VALUE, true);
-        this.mapper.configure(SerializationFeature.WRITE_SINGLE_ELEM_ARRAYS_UNWRAPPED, true);
-        this.mapper.configure(DeserializationFeature.UNWRAP_ROOT_VALUE, true);
-        this.mapper.configure(DeserializationFeature.UNWRAP_SINGLE_VALUE_ARRAYS, true);
-        this.mapper.configure(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY, true);
+//        this.mapper.configure(SerializationFeature.WRAP_ROOT_VALUE, true);
+//        this.mapper.configure(DeserializationFeature.UNWRAP_ROOT_VALUE, true);
+//        this.mapper.configure(SerializationFeature.WRITE_SINGLE_ELEM_ARRAYS_UNWRAPPED, true);
+//        this.mapper.configure(DeserializationFeature.UNWRAP_SINGLE_VALUE_ARRAYS, true);
+//        this.mapper.configure(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY, true);
+        this.mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        this.mapper.enable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+//        this.mapper.enable(DeserializationFeature.READ_DATE_TIMESTAMPS_AS_NANOSECONDS);
+        this.mapper.enable(SerializationFeature.WRITE_DATE_TIMESTAMPS_AS_NANOSECONDS);
         this.typeFactory = this.mapper.getTypeFactory();
+        arrayTypeMap = new ConcurrentHashMap<>(32);
         this.collectionTypeMap = new ConcurrentHashMap<>(32);
         this.mapTypeMap = new ConcurrentHashMap<>(32);
     }
@@ -63,13 +70,24 @@ public class JacksonParser extends JsonParser {
         return obj;
     }
 
+    public <C> C[] toArray(String json, Class<C> clazz) {
+        C[] array;
+        try {
+            array = this.mapper.readValue(json, this.arrayTypeGenerator(clazz));
+        } catch (IOException e) {
+            log.error("Deserialization Array Error: " + e);
+            return null;
+        }
+        return array;
+    }
+
     @Override
     public <C> List<C> toList(String json, Class<C> clazz) {
         List<C> list;
         try {
             list = this.mapper.readValue(json, this.collectionTypeGenerator(clazz));
         } catch (IOException e) {
-            log.error("Deserialization ArrayList Error: " + e);
+            log.error("Deserialization List Error: " + e);
             return null;
         }
         return list;
@@ -110,6 +128,17 @@ public class JacksonParser extends JsonParser {
         }
         return map;
     }
+
+    protected ArrayType arrayTypeGenerator(Class<?> cls) {
+        String name = cls.getName().trim();
+        ArrayType type = arrayTypeMap.get(name);
+        if(null == type) {
+            type = typeFactory.constructArrayType(cls);
+            arrayTypeMap.put(name, type);
+        }
+        return type;
+    }
+
 
     protected CollectionType collectionTypeGenerator(Class<?> cls) {
         String name = cls.getName().trim();
