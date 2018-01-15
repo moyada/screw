@@ -1,4 +1,4 @@
-package cn.xyk.screw.utils;
+package cn.moyada.screw.utils;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;

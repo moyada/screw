@@ -1,4 +1,4 @@
-package cn.xyk.screw.utils;
+package cn.moyada.screw.utils;
 
 
 import net.sf.cglib.beans.BeanCopier;

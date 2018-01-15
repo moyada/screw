@@ -1,4 +1,4 @@
-package cn.xyk.screw.utils;
+package cn.moyada.screw.utils;
 
 import java.io.BufferedReader;
 import java.io.IOException;

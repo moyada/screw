@@ -1,6 +1,6 @@
-package cn.xyk.screw.tools;
+package cn.moyada.screw.tools;
 
-import cn.xyk.screw.model.OrderDO;
+import cn.moyada.screw.model.OrderDO;
 import com.sun.javafx.binding.StringFormatter;
 
 import java.lang.reflect.Field;

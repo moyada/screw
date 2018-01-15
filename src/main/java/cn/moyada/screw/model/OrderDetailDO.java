@@ -1,4 +1,4 @@
-package cn.xyk.screw.model;
+package cn.moyada.screw.model;
 
 /**
  * Created by xueyikang on 2017/12/11.

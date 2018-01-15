@@ -1,4 +1,4 @@
-package cn.xyk.screw.parser;
+package cn.moyada.screw.parser;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -14,7 +14,7 @@ import java.util.*;
 /**
  * Created by xueyikang on 2017/12/15.
  */
-public class GsonParser extends cn.xyk.screw.parser.JsonParser {
+public class GsonParser extends cn.moyada.screw.parser.JsonParser {
     private static final Logger log = LoggerFactory.getLogger(GsonParser.class);
 
     private final Gson gson;

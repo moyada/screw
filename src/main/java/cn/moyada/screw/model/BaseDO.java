@@ -1,4 +1,4 @@
-package cn.xyk.screw.model;
+package cn.moyada.screw.model;
 
 import java.sql.Timestamp;
 
