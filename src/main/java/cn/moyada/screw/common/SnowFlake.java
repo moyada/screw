@@ -48,8 +48,8 @@ public final class SnowFlake {
         java.util.Calendar calendar = java.util.Calendar.getInstance();
         calendar.set(2000, java.util.Calendar.JANUARY, 1, 0, 0, 0);
 
-        START_TIME = millisToSecond(calendar.getTimeInMillis());
-        NOW_TIME = millisToSecond(System.currentTimeMillis());
+        START_TIME = calendar.getTimeInMillis();
+        NOW_TIME = System.currentTimeMillis();
     }
 
     private SnowFlake() {
@@ -74,11 +74,20 @@ public final class SnowFlake {
 
     public static long generateId() {
         long time = getNow();
-        return genTime(time) | machineId | genOrder(time);
+        int order;
+        while (-1 == (order = genOrder(time))) {
+            try {
+                Thread.sleep(10);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            time = getNow();
+        }
+        return genTime(time) | machineId | order;
     }
 
     private static final long getNow() {
-        return millisToSecond(System.currentTimeMillis());
+        return System.currentTimeMillis();
     }
 
     /**
@@ -97,6 +106,9 @@ public final class SnowFlake {
     private static final int genOrder(long time) {
         synchronized(SnowFlake.class) {
             if (time == NOW_TIME) {
+                if(order == ORDER_BIT) {
+                    return -1;
+                }
                 return ++order & ORDER_BIT;
             }
             NOW_TIME = time;
