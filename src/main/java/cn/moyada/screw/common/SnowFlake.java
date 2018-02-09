@@ -1,60 +1,62 @@
 package cn.moyada.screw.common;
 
-
-import java.net.InetAddress;
-import java.net.NetworkInterface;
-import java.net.SocketException;
-import java.net.UnknownHostException;
-import java.time.Instant;
-
 /**
  * @author xueyikang
  * @create 2018-02-08 17:17
  */
-public class SnowFlake {
+public final class SnowFlake {
 
     private static int order = 0;
 
-    private static long now;
+    private static final long START_TIME;
+
+    private static long NOW_TIME;
 
     private static final int machineId;
 
-    private static long TIME_BIT;
+    private static final long TIME_BIT;
 
-    private static int MACHINE_BIT;
+    private static final int MACHINE_BIT;
 
-    private static int ORDER_BIT;
+    private static final int ORDER_BIT;
 
-    private static int MACHINE_DIGIT = 10;
+    private static final int MACHINE_DIGIT = 10;
 
-    private static int ORDER_DIGIT = 12;
+    private static final int ORDER_DIGIT = 12;
 
-    private static int LOW_DIGIT = MACHINE_DIGIT + ORDER_DIGIT;
+    private static final int LOW_DIGIT = MACHINE_DIGIT + ORDER_DIGIT;
 
     static {
-        // 63
+        // 2^64 - 1 => 1*63bit
         long all = Long.MAX_VALUE;
-        // 22
-        int low = Integer.MAX_VALUE >>> 9;
+        // 2^31 - 1 - 2^9 = 2^22 - 1 => 1*21bit
+        int low = Integer.MAX_VALUE >>> (MACHINE_DIGIT - 1);
 
+        // high 41 bit(1~42) of 64
         TIME_BIT = all ^ low;
-        ORDER_BIT = low >>> 10;
+        // low 12 bit(53~64) of 64
+        ORDER_BIT = low >>> MACHINE_DIGIT;
+        // middle 10 bit(43~52) of 64
         MACHINE_BIT = ORDER_BIT << ORDER_DIGIT;
 
         try {
-            machineId = (getMachineId() << ORDER_DIGIT) & MACHINE_BIT;
-        } catch (UnknownHostException | SocketException e) {
+            machineId = (genMachineId() << ORDER_DIGIT) & MACHINE_BIT;
+        } catch (java.net.UnknownHostException | java.net.SocketException e) {
             throw new RuntimeException(e);
         }
 
-        now = Instant.now().toEpochMilli() << LOW_DIGIT & TIME_BIT;
+        java.util.Calendar calendar = java.util.Calendar.getInstance();
+        calendar.set(2000, java.util.Calendar.JANUARY, 1, 0, 0, 0);
+
+        START_TIME = millisToSecond(calendar.getTimeInMillis());
+        NOW_TIME = millisToSecond(System.currentTimeMillis());
     }
 
     private SnowFlake() {
     }
 
-    private static int getMachineId() throws UnknownHostException, SocketException {
-        byte[] mac = NetworkInterface.getByInetAddress(InetAddress.getLocalHost()).getHardwareAddress();
+    private static int genMachineId() throws java.net.UnknownHostException, java.net.SocketException {
+        byte[] mac = java.net.NetworkInterface.getByInetAddress(java.net.InetAddress.getLocalHost()).getHardwareAddress();
 
         int machineId = 0;
         int bit = 0;
@@ -70,28 +72,39 @@ public class SnowFlake {
         return machineId;
     }
 
-    public static long getSnowFlakeId() {
-        long time = getTime();
-        int order = getOrder(time);
-        return time + machineId + order;
+    public static long generateId() {
+        long time = getNow();
+        return genTime(time) | machineId | genOrder(time);
     }
 
     private static final long getNow() {
-        return Instant.now().toEpochMilli();
+        return millisToSecond(System.currentTimeMillis());
     }
 
-    private static final long getTime() {
-        return (getNow() << LOW_DIGIT) & TIME_BIT;
+    /**
+     * generate time start with 2000 year
+     * @param time
+     * @return
+     */
+    private static final long genTime(long time) {
+        return ((time - START_TIME) << LOW_DIGIT) & TIME_BIT;
     }
 
-    private static final int getOrder(long time) {
+    private static final long millisToSecond(long millis) {
+        return millis / 1000L;
+    }
+
+    private static final int genOrder(long time) {
         synchronized(SnowFlake.class) {
-            if (time == now) {
+            if (time == NOW_TIME) {
                 return ++order & ORDER_BIT;
             }
-            now = time;
-            order = 1;
-            return order;
+            NOW_TIME = time;
+            return (order = 1);
         }
+    }
+
+    public static void main(String[] args) {
+        System.out.println(Long.MAX_VALUE);
     }
 }
