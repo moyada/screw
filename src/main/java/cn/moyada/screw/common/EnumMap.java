@@ -10,7 +10,7 @@ import java.util.function.BiConsumer;
  * @author xueyikang
  * @create 2018-03-01 21:28
  */
-public class EnumMap<K extends Enum, V> {
+public class EnumMap<K extends Enum, V> implements AbstractMap<K, V>  {
 
     private K[] keys;
     private Node<V>[] values;
@@ -30,16 +30,33 @@ public class EnumMap<K extends Enum, V> {
         size = new LongAdder();
     }
 
-    public void put(K key, V val) {
-        int index = key.ordinal();
-        if(null == values[index]) {
-            size.increment();
-        }
+    @Override
+    public V put(K key, V val) {
+        int index = index(key);
+        Node<V> value = values[index];
         values[index] = new Node<>(val);
+        if(null == value) {
+            size.increment();
+            return null;
+        }
+        return value.value;
     }
 
+    @Override
+    public V remove(K key) {
+        int index = index(key);
+        Node<V> value = values[index];
+        values[index] = null;
+        if(null == value) {
+            return null;
+        }
+        size.decrement();
+        return value.value;
+    }
+
+    @Override
     public V get(K key) {
-        int index = key.ordinal();
+        int index = index(key);
         Node<V> node = values[index];
         if(null == node) {
             return null;
@@ -47,30 +64,37 @@ public class EnumMap<K extends Enum, V> {
         return node.value;
     }
 
-    public void forEach(BiConsumer<? super K, ? super V> var1) {
-        if (var1 == null) {
+    @Override
+    public void forEach(BiConsumer<? super K, ? super V> consumer) {
+        if (consumer == null) {
             throw new NullPointerException();
         } else {
             int length = values.length;
             Node<V> value;
             for (int i = 0; i < length; i++) {
                 if(null != (value = values[i])) {
-                    var1.accept(keys[i], value.value);
+                    consumer.accept(keys[i], value.value);
                 }
             }
         }
     }
 
+    @Override
     public int size() {
         return size.intValue();
     }
 
+    @Override
     public boolean isEmpty() {
         return size.intValue() == 0;
     }
 
+    private int index(K key) {
+        return key.ordinal();
+    }
+
     @Contended
-    private final class Node<T> { // extends Padding {
+    protected final class Node<T> extends Padding {
 
         private final T value;
 
@@ -80,10 +104,10 @@ public class EnumMap<K extends Enum, V> {
     }
 
     private abstract class Padding {
-        private long p1, p2, p3, p4, p5, p6;
+        private long p1, p2, p3, p4, p5;
 
         public long getP() {
-            return p1 + p2 + p3 + p4 + p5 + p6;
+            return p1 + p2 + p3 + p4 + p5;
         }
     }
 }

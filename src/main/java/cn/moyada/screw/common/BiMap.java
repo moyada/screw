@@ -8,7 +8,7 @@ import java.util.function.BiConsumer;
  * @author xueyikang
  * @create 2018-03-02 14:26
  */
-public class BiMap<K, V> {
+public class BiMap<K, V> implements AbstractMap<K, V> {
 
     private static final int DEFAULT_CAPACITY = 15;
 
@@ -48,30 +48,30 @@ public class BiMap<K, V> {
         return (size << bit) - 1;
     }
 
-    public void put(K key, V value) {
+    public V put(K key, V value) {
         while (stw) {
         }
 
         V exist = putKey(key, value);
         if(null != exist) {
-            removeKey(exist);
+            removeValue(exist);
         }
         putValue(value, key);
+
+        return exist;
     }
 
-    private void removeKey(V value) {
-        Node<V, K> node;
-        for (int index = hash(value); index < capacity ; index = nextIndex(index)) {
-            node = keys[index];
-            if(null == node) {
-                break;
-            }
-
-            if (node.isKey(value)) {
-                keys[index] = null;
-                break;
-            }
+    @Override
+    public V remove(K key) {
+        while (stw) {
         }
+
+        V exist = removeKey(key);
+        if(null == exist) {
+            return null;
+        }
+        removeValue(exist);
+        return exist;
     }
 
     private V putKey(K key, V value) {
@@ -101,6 +101,22 @@ public class BiMap<K, V> {
         }
     }
 
+    private V removeKey(K key) {
+        Node<K, V> node;
+        for (int index = hash(key); ; index = nextIndex(index)) {
+            node = values[index];
+            if (null == node) {
+                return null;
+            }
+
+            if (node.isKey(key)) {
+                values[index] = null;
+                size--;
+                return node.value;
+            }
+        }
+    }
+
     private void putValue(V key, K value) {
         Node<V, K> node;
         for (int index = hash(key); ; index = nextIndex(index)) {
@@ -116,6 +132,22 @@ public class BiMap<K, V> {
             }
         }
     }
+
+    private void removeValue(V key) {
+        Node<V, K> node;
+        for (int index = hash(key); ; index = nextIndex(index)) {
+            node = keys[index];
+            if (null == node) {
+                break;
+            }
+
+            if (node.isKey(key)) {
+                keys[index] = null;
+                break;
+            }
+        }
+    }
+
 
     private <KK, VV> void put(KK key, VV value, Node<KK, VV>[] arr, int capacity, boolean countSize) {
         Node<KK, VV> node;
@@ -186,15 +218,15 @@ public class BiMap<K, V> {
         return null;
     }
 
-    public void forEach(BiConsumer<? super K, ? super V> var1) {
-        if (var1 == null) {
+    public void forEach(BiConsumer<? super K, ? super V> consumer) {
+        if (consumer == null) {
             throw new NullPointerException();
         } else {
             Node<K, V> node;
             Index next = start.next;
             for (; null != next; next = next.next) {
                 if(null != (node = values[next.index])) {
-                    var1.accept(node.key, node.value);
+                    consumer.accept(node.key, node.value);
                 }
             }
         }
@@ -202,6 +234,11 @@ public class BiMap<K, V> {
 
     public int size() {
         return size;
+    }
+
+    @Override
+    public boolean isEmpty() {
+        return size == 0;
     }
 
     private int nextIndex(int index) {
@@ -216,7 +253,7 @@ public class BiMap<K, V> {
         return (obj.hashCode() & capacity + capacity) & capacity;
     }
 
-    private class Index {
+    protected class Index extends Padding {
         private int index;
         private Index next;
 
@@ -225,7 +262,7 @@ public class BiMap<K, V> {
         }
     }
 
-    private final class Node<X, Y> extends Padding {
+    protected final class Node<X, Y> extends Padding {
         private volatile X key;
         private volatile Y value;
 
@@ -240,10 +277,11 @@ public class BiMap<K, V> {
     }
 
     private class Padding {
-        private long p1, p2, p3, p4, p5;
+        private long p1, p2, p3, p4;
+        private int l1;
 
         private long getP() {
-            return p1 + p2 + p3 + p4 + p5;
+            return p1 + p2 + p3 + p4 + l1;
         }
     }
 }
