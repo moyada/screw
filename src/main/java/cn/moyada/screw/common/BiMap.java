@@ -14,7 +14,7 @@ public class BiMap<K, V> implements AbstractMap<K, V> {
 
     private static final float DEFAULT_LOAD_FACTOR = 0.6f;
 
-    private boolean stw = false;
+    private volatile boolean stw = false;
 
     private Node<V, K>[] keys;
     private Node<K, V>[] values;
@@ -80,8 +80,9 @@ public class BiMap<K, V> implements AbstractMap<K, V> {
             node = values[index];
             if (null == node) {
                 if(size > capacity * DEFAULT_LOAD_FACTOR) {
-                    growSize();
-                    index--;
+                    if(growSize()) {
+                        index--;
+                    }
                     continue;
                 }
 
@@ -164,7 +165,13 @@ public class BiMap<K, V> implements AbstractMap<K, V> {
         }
     }
 
-    private void growSize() {
+    private boolean growSize() {
+        if(this.stw) {
+            for (;this.stw;) {
+
+            }
+            return false;
+        }
         this.stw = true;
         int newCap = ((capacity + 1) << 1) - 1;
 
@@ -172,6 +179,7 @@ public class BiMap<K, V> implements AbstractMap<K, V> {
 
         this.capacity = newCap;
         this.stw = false;
+        return true;
     }
 
     @SuppressWarnings("unchecked")
@@ -272,7 +280,7 @@ public class BiMap<K, V> implements AbstractMap<K, V> {
         }
 
         boolean isKey(X key) {
-            return this.key.equals(key);
+            return this.key == key || this.key.equals(key);
         }
     }
 

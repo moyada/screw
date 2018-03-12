@@ -6,6 +6,8 @@ package cn.moyada.screw.utils;
  */
 public class StringUtil {
 
+    private static final String EMPTY = "_";
+
     public static final boolean isEmpty(String str) {
         if(null == str) {
             return true;
@@ -22,64 +24,62 @@ public class StringUtil {
         return true;
     }
 
-    public static String concat(final Object... objs) {
-        int length = objs.length;
-        String[] strings = new String[length];
-
-        String str;
-        int count = 0, size, index;
-
-        for (index = 0; index < length; index++) {
-            if(objs[index] instanceof Object[]) {
-                str = toString(Object[].class.cast(objs[index]));
-            }
-            else {
-                str = objs[index].toString();
-            }
-            size = str.length();
-            count += size;
-            strings[index] = str;
-        }
-
-        char[] chs = new char[count];
-
-        for (index = 0, count = 0; index < length; index++) {
-            str = strings[index];
-            size = str.length();
-            str.getChars(0, size, chs, count);
-            count += size;
-        }
-        return new String(chs);
+    public static final boolean isEmpty(Object[] objs) {
+        return null == objs || objs.length == 0;
     }
 
-    private static final String toString(final Object[] objs) {
+    public static final String concat(final Object... objs) {
+        if(isEmpty(objs)) {
+            return EMPTY;
+        }
+        StringBuilder sb = new StringBuilder();
+
         int length = objs.length;
+        for (int index = 0; index < length; index++) {
+            if(objs[index] instanceof Object[]) {
+                sb.append(arr2str(Object[].class.cast(objs[index])));
+            }
+            else {
+                sb.append(objs[index].toString());
+            }
+        }
+        return sb.toString().intern();
+    }
 
-        String[] strings = new String[length];
+    private static final String arr2str(final Object[] objs) {
+        if(null == objs) {
+            return EMPTY;
+        }
+        StringBuilder sb = new StringBuilder();
 
-        int count = 0, size, index;
+        int length = objs.length;
+        for (int index = 0; index < length; index++) {
+            sb.append(toString(objs[index]));
+        }
+        return sb.toString().intern();
+    }
+
+
+    private static final String toString(final Object obj) {
+        if(null == obj) {
+            return EMPTY;
+        }
         String str;
-        for (index = 0; index < length; index++) {
-            str = objs[index].toString();
-            size = str.length();
-            strings[index] = str;
-            count += size;
+        if(obj.getClass().isArray()) {
+            str = arr2str(Object[].class.cast(obj));
         }
-
-        char[] chs = new char[count];
-        for (index = 0, count = 0; index < length; index++) {
-            str = strings[index];
-            size = str.length();
-            str.getChars(0, size, chs, count);
-            count += size;
+        else {
+            str = obj.toString();
         }
-        return new String(chs);
+        return str;
     }
 
 
     public static void main(String[] args) {
-        Object[] objs = new Object[]{"model", "souche", new Object[]{12, "32000"}, "666"};
+        Object[] objs = new Object[]{"model", "souche", new Object[]{new Object[]{12, "32000"}, "32000"}, "666"};
 
         System.out.println(concat(objs));
+
+        System.out.println(toString(12.43d));
     }
 }
