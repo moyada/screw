@@ -36,14 +36,23 @@ public class StringUtil {
 
         int length = objs.length;
         for (int index = 0; index < length; index++) {
-            if(objs[index] instanceof Object[]) {
-                sb.append(arr2str(Object[].class.cast(objs[index])));
-            }
-            else {
-                sb.append(objs[index].toString());
-            }
+            sb.append(toString(objs[index]));
         }
         return sb.toString().intern();
+    }
+
+    private static final String toString(final Object obj) {
+        if(null == obj) {
+            return EMPTY;
+        }
+        String str;
+        if(obj instanceof Object[]) {
+            str = arr2str(Object[].class.cast(obj));
+        }
+        else {
+            str = obj.toString().intern();
+        }
+        return str;
     }
 
     private static final String arr2str(final Object[] objs) {
@@ -57,29 +66,5 @@ public class StringUtil {
             sb.append(toString(objs[index]));
         }
         return sb.toString().intern();
-    }
-
-
-    private static final String toString(final Object obj) {
-        if(null == obj) {
-            return EMPTY;
-        }
-        String str;
-        if(obj.getClass().isArray()) {
-            str = arr2str(Object[].class.cast(obj));
-        }
-        else {
-            str = obj.toString();
-        }
-        return str;
-    }
-
-
-    public static void main(String[] args) {
-        Object[] objs = new Object[]{"model", "souche", new Object[]{new Object[]{12, "32000"}, "32000"}, "666"};
-
-        System.out.println(concat(objs));
-
-        System.out.println(toString(12.43d));
     }
 }

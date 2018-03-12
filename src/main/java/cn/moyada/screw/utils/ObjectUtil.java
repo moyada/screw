@@ -2,13 +2,12 @@ package cn.moyada.screw.utils;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import net.sf.cglib.beans.BeanCopier;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Type;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Created by xueyikang on 2017/2/17.
@@ -16,6 +15,57 @@ import java.util.Objects;
 @SuppressWarnings("unchecked")
 public class ObjectUtil {
 
+    private static Map<Class, BeanCopier> copyMap = new HashMap<>();
+
+    /**
+     * 复制list集合到指定对象list，对同名称同类型属性进行复制
+     *
+     * @param sourceList 源list
+     * @param targetList 目标Class类
+     * @param <T>    源class
+     * @param <C>    目标class
+     * @return 目标Class类list集合
+     */
+    public static <T, C> List<C> copyToList(final List<T> sourceList, final Class<C> targetList) {
+        if(null == sourceList || 0 == sourceList.size()) {
+            return Collections.emptyList();
+        }
+        return sourceList.stream()
+                .map(t -> copyToObject(t, targetList))
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * 复制对象为指定类型对象，对同名称同类型属性进行复制
+     *
+     * @param source 源对象
+     * @param target 目标Class类
+     * @param <T>    源class
+     * @param <C>    目标class
+     * @return 目标Class类对象
+     */
+    public static <T, C> C copyToObject(final T source, final Class<C> target) {
+        if(null == source) {
+            return null;
+        }
+        C obj;
+        try {
+            obj = target.newInstance();
+        } catch (InstantiationException | IllegalAccessException e) {
+            return null;
+        }
+        BeanCopier copier = copyMap.get(target);
+        if(null == copier) {
+            BeanCopier.Generator gen = new BeanCopier.Generator();
+            gen.setSource(source.getClass());
+            gen.setTarget(target);
+            copier = gen.create();
+            copyMap.put(target, copier);
+        }
+        copier.copy(source, obj, null);
+        return obj;
+    }
 
     public static <C> Map<String, Object> getValues(List<C> list, Class<C> cClass) {
         return getValues(list, cClass, 16);
