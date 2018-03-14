@@ -1,9 +1,9 @@
 package cn.moyada.screw.cache;
 
-import java.util.Deque;
 import java.util.Map;
+import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.concurrent.locks.LockSupport;
 
@@ -15,7 +15,7 @@ import java.util.concurrent.locks.LockSupport;
 public class CASCombineRequest extends AbstractCombineRequest {
 
     // 阻塞队列
-    private Map<Integer, Deque<Thread>> blockingMap;
+    private final Map<Integer, Queue<Thread>> blockingMap;
 
     // 队列大小
     private static int LIMIT = (1 << 8) - 1;
@@ -23,6 +23,8 @@ public class CASCombineRequest extends AbstractCombineRequest {
     // 队列下标
 //    private volatile String[] indexQueue;
     private volatile AtomicReferenceArray<String> indexQueue;
+    // 运行标记
+    private volatile AtomicReferenceArray<Boolean> queueMark;
 
     // 运行标记
     private volatile AtomicReferenceArray<Boolean> runningMark;
@@ -31,11 +33,13 @@ public class CASCombineRequest extends AbstractCombineRequest {
         blockingMap = new ConcurrentHashMap<>(LIMIT);
 //        indexQueue = new String[LIMIT];
         indexQueue = new AtomicReferenceArray<>(LIMIT);
+        queueMark = new AtomicReferenceArray<>(LIMIT);
         runningMark = new AtomicReferenceArray<>(LIMIT);
 
         // init false
         for (int i = 0; i < LIMIT; i++) {
             runningMark.set(i, false);
+            queueMark.set(i, false);
         }
     }
 
@@ -72,10 +76,22 @@ public class CASCombineRequest extends AbstractCombineRequest {
         for (;;) {
             index = getIndex(key);
             if (runningMark.compareAndSet(index, true, true)) {
+                Queue<Thread> deque = blockingMap.get(index);
+                if(null == deque) {
+                    if(queueMark.compareAndSet(index, false, true)) {
+                        deque = new LinkedBlockingQueue<>();
+                        blockingMap.put(index, deque);
+                    }
+                    else {
+                        do {
+                            deque = blockingMap.get(index);
+                        }
+                        while (null == deque);
+                    }
+                    queueMark.compareAndSet(index, true, false);
+                }
 
-                blockingMap.putIfAbsent(index, new ConcurrentLinkedDeque<>());
-
-                blockingMap.get(index).addLast(Thread.currentThread());
+                deque.add(Thread.currentThread());
 
                 // block current thread
                 LockSupport.park();
@@ -92,15 +108,14 @@ public class CASCombineRequest extends AbstractCombineRequest {
         // reset running mark
         runningMark.compareAndSet(index, true, false);
 
-        Deque<Thread> blockingDeque = blockingMap.get(index);
+        Queue<Thread> blockingDeque = blockingMap.get(index);
         if(null == blockingDeque) {
             return;
         }
 
         // release blocking thread
-//        Thread thread;
-        for (Thread thread = blockingDeque.pollFirst(); null != thread; thread = blockingDeque.pollFirst()) {
-//        while (null != (thread = blockingDeque.pollFirst())) {
+        Thread thread;
+        while (null != (thread = blockingDeque.poll())) {
             LockSupport.unpark(thread);
         }
     }
