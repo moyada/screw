@@ -284,12 +284,12 @@ public class BiMap<K, V> implements AbstractMap<K, V> {
         }
     }
 
-    private class Padding {
-        private long p1, p2, p3, p4;
+    private abstract class Padding {
+        private long p1, p2, p3, p4, p5, p6;
         private int l1;
 
         private long getP() {
-            return p1 + p2 + p3 + p4 + l1;
+            return p1 + p2 + p3 + p4 + p5 + p6 + l1;
         }
     }
 }
