@@ -1,4 +1,4 @@
-package cn.moyada.screw.common;
+package cn.moyada.screw.collection;
 
 import sun.jvm.hotspot.runtime.ConstructionException;
 import sun.misc.Contended;

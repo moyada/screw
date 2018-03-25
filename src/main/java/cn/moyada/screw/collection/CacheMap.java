@@ -1,4 +1,4 @@
-package cn.moyada.screw.common;
+package cn.moyada.screw.collection;
 
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;

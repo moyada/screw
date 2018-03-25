@@ -1,7 +1,11 @@
-package cn.moyada.screw.common;
+package cn.moyada.screw.collection;
 
 import sun.jvm.hotspot.runtime.ConstructionException;
 
+import java.util.Queue;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.LockSupport;
 import java.util.function.BiConsumer;
 
 /**
@@ -14,7 +18,8 @@ public class BiMap<K, V> implements AbstractMap<K, V> {
 
     private static final float DEFAULT_LOAD_FACTOR = 0.6f;
 
-    private volatile boolean stw = false;
+    private final AtomicBoolean stw;
+    private final Queue<Thread> blockThreads;
 
     private Node<V, K>[] keys;
     private Node<K, V>[] values;
@@ -33,6 +38,8 @@ public class BiMap<K, V> implements AbstractMap<K, V> {
             throw new ConstructionException("wrong capacity");
         }
         this.capacity = getCap(capacity);
+        this.stw = new AtomicBoolean(false);
+        this.blockThreads = new LinkedBlockingQueue<>();
         this.size = 0;
         this.keys = new Node[this.capacity];
         this.values = new Node[this.capacity];
@@ -49,8 +56,7 @@ public class BiMap<K, V> implements AbstractMap<K, V> {
     }
 
     public V put(K key, V value) {
-        while (stw) {
-        }
+        blockIfSTW();
 
         V exist = putKey(key, value);
         if(null != exist) {
@@ -63,8 +69,7 @@ public class BiMap<K, V> implements AbstractMap<K, V> {
 
     @Override
     public V remove(K key) {
-        while (stw) {
-        }
+        blockIfSTW();
 
         V exist = removeKey(key);
         if(null == exist) {
@@ -72,6 +77,20 @@ public class BiMap<K, V> implements AbstractMap<K, V> {
         }
         removeValue(exist);
         return exist;
+    }
+
+    private void blockIfSTW() {
+        if (stw.get()) {
+            blockThreads.add(Thread.currentThread());
+            LockSupport.park();
+        }
+    }
+
+    private void releaseBlock() {
+        Thread thread;
+        while (null != (thread = blockThreads.poll())) {
+            LockSupport.unpark(thread);
+        }
     }
 
     private V putKey(K key, V value) {
@@ -166,19 +185,20 @@ public class BiMap<K, V> implements AbstractMap<K, V> {
     }
 
     private boolean growSize() {
-        if(this.stw) {
-            for (;this.stw;) {
-
-            }
+        if(!stw.compareAndSet(false, true)) {
+            blockThreads.add(Thread.currentThread());
+            LockSupport.park();
             return false;
         }
-        this.stw = true;
+
         int newCap = ((capacity + 1) << 1) - 1;
 
         rehash(newCap);
 
         this.capacity = newCap;
-        this.stw = false;
+        this.stw.set(false);
+
+        releaseBlock();
         return true;
     }
 

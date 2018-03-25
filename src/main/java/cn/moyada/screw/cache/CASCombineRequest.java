@@ -9,29 +9,47 @@ import java.util.concurrent.locks.LockSupport;
 
 /**
  * 针对大请求同一方法防止请求穿透
+ *
+ * Demo
+ * --------
+ *
+ * public String getCache(String key) {
+ *     String value = cacheService.get(key);
+ *     if(null != value) {
+ *         return value;
+ *     }
+ *
+ *     CASCombineRequest.waitIfRunning(key);
+ *
+ *     return cacheService.get(key);
+ * }
+ *
+ *  public void setCache(String key, String value) {
+ *     cacheService.set(key, value);
+ *
+ *     CASCombineRequest.notifyWait(key);
+ * }
+ *
+ * --------
+ *
  * @author xueyikang
  * @create 2018-03-09 21:33
  */
-public class CASCombineRequest extends AbstractCombineRequest {
+public class CASCombineRequest extends CombineRequest {
 
     // 阻塞队列
     private final Map<Integer, Queue<Thread>> blockingMap;
 
-    // 队列大小
-    private static int LIMIT = (1 << 8) - 1;
-
     // 队列下标
-//    private volatile String[] indexQueue;
-    private volatile AtomicReferenceArray<String> indexQueue;
-    // 运行标记
-    private volatile AtomicReferenceArray<Boolean> queueMark;
+    private final AtomicReferenceArray<String> indexQueue;
+    // 队列标记
+    private final AtomicReferenceArray<Boolean> queueMark;
 
     // 运行标记
-    private volatile AtomicReferenceArray<Boolean> runningMark;
+    private final AtomicReferenceArray<Boolean> runningMark;
 
     public CASCombineRequest() {
         blockingMap = new ConcurrentHashMap<>(LIMIT);
-//        indexQueue = new String[LIMIT];
         indexQueue = new AtomicReferenceArray<>(LIMIT);
         queueMark = new AtomicReferenceArray<>(LIMIT);
         runningMark = new AtomicReferenceArray<>(LIMIT);
@@ -44,8 +62,7 @@ public class CASCombineRequest extends AbstractCombineRequest {
     }
 
     private static int getNodeIndex(final String key) {
-        int hashCode = key.hashCode();
-        return ((hashCode & LIMIT) + LIMIT) & LIMIT;
+        return ((key.hashCode() & LIMIT) + key.length()) & LIMIT;
     }
 
     private int getIndex(final String key) {
@@ -55,7 +72,7 @@ public class CASCombineRequest extends AbstractCombineRequest {
             if(indexQueue.compareAndSet(index, null, key) || indexQueue.compareAndSet(index, key, key)) {
                 return index;
             }
-            index++;
+            index = (index + 1) & LIMIT;
         }
     }
 
@@ -66,7 +83,7 @@ public class CASCombineRequest extends AbstractCombineRequest {
             if(indexQueue.compareAndSet(index, key, null)) {
                 return index;
             }
-            index++;
+            index = (index + 1) & LIMIT;
         }
     }
 
@@ -76,25 +93,25 @@ public class CASCombineRequest extends AbstractCombineRequest {
         for (;;) {
             index = getIndex(key);
             if (runningMark.compareAndSet(index, true, true)) {
-                Queue<Thread> deque = blockingMap.get(index);
-                if(null == deque) {
+                Queue<Thread> queue = blockingMap.get(index);
+                if(null == queue) {
                     if(queueMark.compareAndSet(index, false, true)) {
-                        deque = new LinkedBlockingQueue<>();
-                        blockingMap.put(index, deque);
+                        queue = new LinkedBlockingQueue<>();
+                        blockingMap.put(index, queue);
                     }
                     else {
                         do {
-                            deque = blockingMap.get(index);
+                            queue = blockingMap.get(index);
                         }
-                        while (null == deque);
+                        while (null == queue);
                     }
                     queueMark.compareAndSet(index, true, false);
                 }
 
-                deque.add(Thread.currentThread());
+                queue.add(Thread.currentThread());
 
                 // block current thread
-                LockSupport.park();
+                LockSupport.park(key);
                 return;
             } else if (runningMark.compareAndSet(index, false, true)) {
                 return;

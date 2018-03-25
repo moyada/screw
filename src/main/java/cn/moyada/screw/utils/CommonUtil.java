@@ -2,17 +2,138 @@ package cn.moyada.screw.utils;
 
 
 import net.sf.cglib.beans.BeanCopier;
+import org.jboss.netty.handler.codec.serialization.SoftReferenceMap;
+import sun.misc.Unsafe;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.lang.reflect.Field;
+import java.security.AccessController;
+import java.security.PrivilegedExceptionAction;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 /**
  * Created by xueyikang on 2016/11/22.
  */
 public class CommonUtil {
+
+    private static final Unsafe THE_UNSAFE;
+
+    private static final Map<String, Long> offsetMap = new SoftReferenceMap<>(new ConcurrentHashMap<>());
+    private static final Map<String, Field> fieldMap = new SoftReferenceMap<>(new ConcurrentHashMap<>());
+
+    static
+    {
+        try
+        {
+            final PrivilegedExceptionAction<Unsafe> action = () -> {
+                Field theUnsafe = Unsafe.class.getDeclaredField("theUnsafe");
+                theUnsafe.setAccessible(true);
+                return (Unsafe) theUnsafe.get(null);
+            };
+
+            THE_UNSAFE = AccessController.doPrivileged(action);
+        }
+        catch (Exception e)
+        {
+            throw new RuntimeException("Unable to load unsafe", e);
+        }
+    }
+
+    /**
+     * Get a handle on the Unsafe instance, used for accessing low-level concurrency
+     * and memory constructs.
+     *
+     * @return The Unsafe
+     */
+    public static Unsafe getUnsafe()
+    {
+        return THE_UNSAFE;
+    }
+
+    private static long getOffset(Class clazz, Field field) {
+        String key = StringUtil.concat(clazz.getName() + field.getName());
+        Long offset = offsetMap.get(key);
+        if(null == offset) {
+            offset = THE_UNSAFE.objectFieldOffset(field);
+            offsetMap.put(key, offset);
+        }
+        return offset;
+    }
+
+    private static Field getField(Class clazz, String fieldName) {
+        String key = StringUtil.concat(clazz.getName() + fieldName);
+        Field field = fieldMap.get(key);
+        if(null == field) {
+            try {
+                field = clazz.getDeclaredField(fieldName);
+            } catch (NoSuchFieldException e) {
+                return null;
+            }
+            fieldMap.put(key, field);
+        }
+        return field;
+    }
+
+    public static boolean compareAndSwapParameter(Object object, String paramName,
+                                               Object oldValue, Object newValue) {
+        return compareAndSwapParameter(object, paramName, oldValue, newValue, object.getClass());
+    }
+
+    public static boolean compareAndSwapParameter(Object object, String paramName,
+                                               Object oldValue, Object newValue, Class clazz) {
+        Field field = getField(clazz, paramName);
+        if(null == field) {
+            return false;
+        }
+
+        long offset = getOffset(clazz, field);
+
+        boolean success;
+        Object value = THE_UNSAFE.getObjectVolatile(object, offset);
+        if(!value.toString().equals(oldValue.toString())) {
+            return false;
+        }
+
+        switch (field.getDeclaringClass().getSimpleName()) {
+            case "int":
+            case "Integer":
+                success = THE_UNSAFE.compareAndSwapInt(object, offset, (Integer) value, (Integer) newValue);
+                break;
+            case "long":
+            case "Long":
+                success = THE_UNSAFE.compareAndSwapLong(object, offset, (Long) value, (Long) newValue);
+                break;
+            default:
+                success = THE_UNSAFE.compareAndSwapObject(object, offset, value, newValue);
+                break;
+        }
+        return success;
+    }
+
+    public static boolean compareAndSwapString(String oldString, String newString) {
+        char[] oldValue = getStringValue(oldString);
+        char[] newValue = getStringValue(newString);
+        return compareAndSwapParameter(oldString, "value", oldValue, newValue, String.class);
+    }
+
+
+    public static void main(String[] args) {
+        String s1 = "666";
+        String s2 = "777";
+        compareAndSwapString(s1, s2);
+        System.out.println(s1);
+
+    }
+
+    private static char[] getStringValue(String str) {
+        int length = str.length();
+        char[] value = new char[length];
+        for (int index = 0; index < length; index++) {
+            value[index] = str.charAt(index);
+        }
+        return value;
+    }
 
     /**
      * 过滤空元素

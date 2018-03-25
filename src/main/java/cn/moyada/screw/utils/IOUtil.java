@@ -2,6 +2,8 @@ package cn.moyada.screw.utils;
 
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -15,6 +17,25 @@ import java.util.stream.Stream;
  * Created by xueyikang on 2017/12/12.
  */
 public class IOUtil {
+
+    public static String read(InputStream in) {
+        if(null == in) {
+            throw cn.moyada.screw.exception.IOException.NULL_ERROR;
+        }
+        BufferedReader reader = new BufferedReader (new InputStreamReader(in));
+
+        StringBuilder sb = new StringBuilder();
+        String line;
+        try {
+            while ((line = reader.readLine()) != null) {
+                sb.append(line);
+            }
+        }
+        catch (IOException e) {
+            throw cn.moyada.screw.exception.IOException.IO_ERROR;
+        }
+        return sb.toString();
+    }
 
     public static Map<String, String> read2Map(String fileName, FileOpt<Stream<String>, Map<String, String>, IOException> block) throws IOException {
         return read2Map(fileName, block, StandardCharsets.UTF_8);
