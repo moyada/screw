@@ -2,7 +2,6 @@ package cn.moyada.screw.pool;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 /**
@@ -21,19 +20,31 @@ public abstract class BeanPoolFactory<T> implements BeanPool<T> {
         this.defaultBean = defaultBean;
     }
 
-    public static <T> BeanPool<T> newPool(Supplier<T> defaultBean) {
+    public static <T> BeanPool<T> newPool(T defaultBean) {
         return newPool(defaultBean, false);
     }
 
-    public static <T> BeanPool<T> newPool(Supplier<T> defaultBean, boolean synchronize) {
+    public static <T> BeanPool<T> newPool(T defaultBean, boolean synchronize) {
         if(null == defaultBean) {
             throw new IllegalArgumentException("defaultBean can not be null.");
         }
+        final T bean = defaultBean;
+        return newPool(() -> bean, synchronize);
+    }
+
+    public static <T> BeanPool<T> newPool(Supplier<T> defaultBeanFactory) {
+        return newPool(defaultBeanFactory, false);
+    }
+
+    public static <T> BeanPool<T> newPool(Supplier<T> defaultBeanFactory, boolean synchronize) {
+        if(null == defaultBeanFactory) {
+            throw new IllegalArgumentException("defaultBeanFactory can not be null.");
+        }
 
         if(synchronize) {
-            return new ConcurrentBeanPool<>(defaultBean);
+            return new ConcurrentBeanPool<>(defaultBeanFactory);
         }
-        return new SingleBeanPool<>(defaultBean);
+        return new SingleBeanPool<>(defaultBeanFactory);
     }
 
     /**
@@ -59,10 +70,13 @@ public abstract class BeanPoolFactory<T> implements BeanPool<T> {
     }
 
     public static void main(String[] args) throws InterruptedException {
-        BeanPool<String> executor = BeanPoolFactory.newPool(() -> "666", true);
+        String defaultBean = "666";
+        BeanPool<String> executor = BeanPoolFactory.newPool(defaultBean, true);
         ExecutorService pool = Executors.newFixedThreadPool(4);
+        defaultBean = null;
 
         executor.recycle("haha");
+        pool.execute(() -> System.out.println(executor.allocate()));
         pool.execute(() -> System.out.println(executor.allocate()));
         pool.execute(() -> executor.recycle("heihei"));
 
@@ -75,7 +89,6 @@ public abstract class BeanPoolFactory<T> implements BeanPool<T> {
             pool.execute(() -> System.out.println(executor.allocate()));
         }
 
-        TimeUnit.SECONDS.sleep(3);
         Thread.currentThread().join();
     }
 }

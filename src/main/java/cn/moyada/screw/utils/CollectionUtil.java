@@ -1,9 +1,6 @@
 package cn.moyada.screw.utils;
 
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 
 /**
  * @author xueyikang
@@ -36,6 +33,17 @@ public class CollectionUtil {
         newSet.addAll(set1);
         newSet.addAll(set2);
         return newSet;
+    }
+
+
+    public static <E> LinkedList<E> reverse(LinkedList<E> source) {
+        LinkedList<E> reverse = new LinkedList<>();
+        E value;
+        while (null != (value = source.pollLast())) {
+            reverse.offer(value);
+        }
+
+        return reverse;
     }
 }
 

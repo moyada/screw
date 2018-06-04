@@ -48,10 +48,8 @@ public class ConcurrentBeanPool<T> extends BeanPoolFactory<T> {
 
         // 新资源为空，清空尾指针
         if(null == next) {
-            System.out.println("88");
-            // 当回收资源同时发生时
             if(!last.compareAndSet(item, null)) {
-                System.out.println("null");
+                // 当回收资源同时发生时
                 first.compareAndSet(null, item.next);
             }
         }

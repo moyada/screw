@@ -57,6 +57,27 @@ public class FileUtil {
         }
     }
 
+    public static void copy2(String sourceFile, String targetFile) throws IOException {
+        Path sourcePath = Paths.get(sourceFile);
+        if(!Files.exists(sourcePath)) {
+            throw cn.moyada.screw.exception.IOException.FILE_NOT_FOUNT;
+        }
+        Path copied = Paths.get(targetFile);
+        if(!Files.exists(copied)) {
+            Files.createFile(copied);
+        }
+
+        try(FileChannel open = FileChannel.open(sourcePath);
+            FileChannel target = FileChannel.open(copied))
+        {
+            open.transferTo(0, open.size(), target);
+        }
+        catch (Exception e)
+        {
+            // ignore
+        }
+    }
+
     public static String read(String filePath) {
         Path path = Paths.get(filePath);
         if(Files.notExists(path)) {

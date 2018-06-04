@@ -1,7 +1,9 @@
 package cn.moyada.screw.utils;
 
 
+import cn.moyada.screw.cache.StringBuilderPool;
 import com.google.common.collect.Lists;
+import jdk.nashorn.internal.ir.debug.ObjectSizeCalculator;
 
 import java.util.*;
 
@@ -9,6 +11,8 @@ import java.util.*;
  * Created by xueyikang on 2017/2/23.
  */
 public class StringUtil {
+
+    private List<StringBuilder> sbPool = new ArrayList<>();
 
     private static final String EMPTY = "";
     private static final String NULL = "_";
@@ -47,11 +51,32 @@ public class StringUtil {
             return EMPTY;
         }
 
-        StringBuilder sb = new StringBuilder();
+        long objectSize = ObjectSizeCalculator.getObjectSize(objs);
+
+        StringBuilder sb = StringBuilderPool.get(Long.valueOf(objectSize).intValue());
+//        StringBuilder sb = new StringBuilder();
         for (int index = 0; index < length; index++) {
             appendToOwn(sb, objs[index]);
         }
-        return sb.toString().intern();
+        String intern = sb.toString().intern();
+        StringBuilderPool.add(sb);
+        return intern;
+    }
+
+    public static void main(String[] args) {
+        Object[] objs = new Object[9];
+        objs[0] = 123;
+        objs[1] = 1255L;
+        objs[2] = "haha";
+        objs[3] = 'z';
+        objs[4] = "6666";
+        objs[5] = -32.12d;
+        objs[6] = -32.12d;
+
+        long objectSize = ObjectSizeCalculator.getObjectSize(objs);
+
+        System.out.println(objectSize);
+        System.out.println(objectSize / 8);
     }
 
     private static final void appendToOwn(final StringBuilder own, final Object obj) {
