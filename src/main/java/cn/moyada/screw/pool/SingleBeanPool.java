@@ -7,7 +7,9 @@ import java.util.function.Supplier;
  * @author xueyikang
  * @create 2018-05-29 19:21
  */
-public class SingleBeanPool<T> extends BeanPoolFactory<T> {
+public class SingleBeanPool<T> extends AbstractBeanPool<T> {
+
+    protected int size;
 
     /**
      * 头指针
@@ -19,15 +21,16 @@ public class SingleBeanPool<T> extends BeanPoolFactory<T> {
      */
     protected Item last;
 
-    SingleBeanPool(Supplier<T> defaultBean) {
-        super(defaultBean);
+    SingleBeanPool(int size, Supplier<T> defaultBean) {
+        super(size, defaultBean);
         this.first = null;
         this.last = null;
+        this.size = 0;
     }
 
     @Override
     protected boolean isEmpty() {
-        return null == first;
+        return size == 0;
     }
 
     @Override
@@ -49,6 +52,8 @@ public class SingleBeanPool<T> extends BeanPoolFactory<T> {
         if(null == first) {
             last = null;
         }
+
+        size--;
         return value;
     }
 
@@ -58,9 +63,14 @@ public class SingleBeanPool<T> extends BeanPoolFactory<T> {
             init(bean);
             return;
         }
-        Item item = new Item(bean);
+        if(size >= maxCapacity) {
+            return;
+        }
+
+        final Item item = new Item(bean);
         last.next = item;
         last = item;
+        size++;
     }
 
     /**
@@ -68,7 +78,7 @@ public class SingleBeanPool<T> extends BeanPoolFactory<T> {
      * @param value
      */
     private void init(T value) {
-        Item item = new Item(value);
+        final Item item = new Item(value);
         first = item;
         last = item;
     }

@@ -3,7 +3,6 @@ package cn.moyada.screw.lock;
 import cn.moyada.screw.utils.CommonUtil;
 import cn.moyada.screw.yaml.YamlAnalyzer;
 import redis.clients.jedis.HostAndPort;
-import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisCluster;
 import redis.clients.jedis.JedisPoolConfig;
 
@@ -16,14 +15,13 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class RedisLock implements DistributionLock {
 
-    private final Jedis jedis;
+//    private final Jedis jedis;
     private final JedisCluster jedisCluster;
 
     public RedisLock() {
-        this.jedis = new Jedis("115.29.10.121", 6379);
+//        this.jedis = new Jedis("115.29.10.121", 6379);
 
         Set<HostAndPort> hostAndPortSet = getConfig("/redis.yaml");
-//        Set<HostAndPort> hostAndPortSet = new HashSet<>();
         this.jedisCluster = new JedisCluster(hostAndPortSet, 1000, 1000, 1, null, new JedisPoolConfig());
     }
 
@@ -82,15 +80,18 @@ public class RedisLock implements DistributionLock {
      */
     @Override
     public boolean release(String key) {
-        String requestId = requestMap.get(key);
+        String requestId = requestMap.remove(key);
         if(null == requestId) {
-            return false;
+            requestId = jedisCluster.get(key);
+            if(null == requestId) {
+                return false;
+            }
         }
 
         String script = "if redis.call('get', KEYS[1]) == ARGV[1] then return redis.call('del', KEYS[1]) else return 0 end";
         Object result = jedisCluster.eval(script, Collections.singletonList(key), Collections.singletonList(requestId));
+
         if(RELEASE_SUCCESS.equals(result)) {
-            requestMap.remove(key);
             return true;
         }
         return false;

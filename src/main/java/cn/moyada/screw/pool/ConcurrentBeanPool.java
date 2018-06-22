@@ -1,5 +1,6 @@
 package cn.moyada.screw.pool;
 
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
@@ -8,7 +9,9 @@ import java.util.function.Supplier;
  * @author xueyikang
  * @create 2018-05-29 19:49
  */
-public class ConcurrentBeanPool<T> extends BeanPoolFactory<T> {
+public class ConcurrentBeanPool<T> extends AbstractBeanPool<T> {
+
+    protected final AtomicInteger size;
 
     /**
      * 头指针
@@ -20,10 +23,11 @@ public class ConcurrentBeanPool<T> extends BeanPoolFactory<T> {
      */
     protected final AtomicReference<Item> last;
 
-    ConcurrentBeanPool(Supplier<T> defaultBean) {
-        super(defaultBean);
+    ConcurrentBeanPool(int size, Supplier<T> defaultBean) {
+        super(size, defaultBean);
         this.first = new AtomicReference<>(null);
         this.last = new AtomicReference<>(null);
+        this.size = new AtomicInteger(0);
     }
 
     @Override
@@ -36,12 +40,16 @@ public class ConcurrentBeanPool<T> extends BeanPoolFactory<T> {
         if(isEmpty()) {
             return initBean.get();
         }
+        System.out.println("empty");
 
         Item item, next;
 
-        // 取出头指针资源，替换下一个资源
+        // 取出头指针资源，替换为下一个资源
         do {
             item = first.get();
+            if(null == item) {
+                return initBean.get();
+            }
             next = item.next;
         }
         while (!first.compareAndSet(item, next));
@@ -54,17 +62,26 @@ public class ConcurrentBeanPool<T> extends BeanPoolFactory<T> {
             }
         }
 
+        int newSize = size.decrementAndGet();
+        if(newSize < 0) {
+            size.incrementAndGet();
+        }
+
         return item.value;
     }
 
     @Override
     protected boolean isEmpty() {
-        return first.compareAndSet(null, null);
+        return size.get() == 0;
     }
 
     @Override
     public void recycle(T bean) {
-        Item next = new Item(bean); // 创建新资源
+        if(size.intValue() >= maxCapacity) {
+            return;
+        }
+
+        final Item next = new Item(bean); // 创建新资源
         Item item = last.get(); // 获取尾指针指向资源
 
         if(null == item) {
@@ -87,5 +104,7 @@ public class ConcurrentBeanPool<T> extends BeanPoolFactory<T> {
 
         // 设置原尾指针next
         item.next = next;
+
+        size.getAndIncrement();
     }
 }

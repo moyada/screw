@@ -3,7 +3,7 @@ package cn.moyada.screw.utils;
 import java.io.IOException;
 import java.nio.CharBuffer;
 import java.nio.MappedByteBuffer;
-import java.nio.channels.FileChannel;
+import java.nio.channels.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.util.EnumSet;
@@ -43,21 +43,7 @@ public class FileUtil {
         }
     }
 
-    public static void copy(String sourceFile, String targetFile) {
-        Path sourcePath = Paths.get(sourceFile);
-        if(!Files.exists(sourcePath)) {
-            throw cn.moyada.screw.exception.IOException.FILE_NOT_FOUNT;
-        }
-        Path copied = Paths.get(targetFile);
-        createFile(copied);
-        try {
-            Files.copy(sourcePath, copied, StandardCopyOption.REPLACE_EXISTING);
-        } catch (IOException e) {
-            throw new cn.moyada.screw.exception.IOException(e);
-        }
-    }
-
-    public static void copy2(String sourceFile, String targetFile) throws IOException {
+    public static void copy(String sourceFile, String targetFile) throws IOException {
         Path sourcePath = Paths.get(sourceFile);
         if(!Files.exists(sourcePath)) {
             throw cn.moyada.screw.exception.IOException.FILE_NOT_FOUNT;
@@ -72,10 +58,13 @@ public class FileUtil {
         {
             open.transferTo(0, open.size(), target);
         }
-        catch (Exception e)
-        {
-            // ignore
-        }
+//        catch (IllegalArgumentException | NonReadableChannelException |
+//                NonWritableChannelException | ClosedChannelException e)
+//        {
+//            // ignore
+//            return false;
+//        }
+//        return true;
     }
 
     public static String read(String filePath) {

@@ -9,27 +9,24 @@ import java.util.function.Supplier;
  * @author xueyikang
  * @create 2018-05-29 19:21
  */
-public abstract class BeanPoolFactory<T> implements BeanPool<T> {
+public abstract class BeanPoolFactory {
 
-    /**
-     * 新对象生成器
-     */
-    protected Supplier<T> defaultBean;
-
-    BeanPoolFactory(Supplier<T> defaultBean) {
-        this.defaultBean = defaultBean;
-    }
+    protected final static int DEFAULT_SIZE = 1024;
 
     public static <T> BeanPool<T> newPool(T defaultBean) {
         return newPool(defaultBean, false);
     }
 
     public static <T> BeanPool<T> newPool(T defaultBean, boolean synchronize) {
+        return newPool(DEFAULT_SIZE, defaultBean, synchronize);
+    }
+
+    public static <T> BeanPool<T> newPool(int size, T defaultBean, boolean synchronize) {
         if(null == defaultBean) {
             throw new IllegalArgumentException("defaultBean can not be null.");
         }
         final T bean = defaultBean;
-        return newPool(() -> bean, synchronize);
+        return newPool(size, () -> bean, synchronize);
     }
 
     public static <T> BeanPool<T> newPool(Supplier<T> defaultBeanFactory) {
@@ -37,41 +34,27 @@ public abstract class BeanPoolFactory<T> implements BeanPool<T> {
     }
 
     public static <T> BeanPool<T> newPool(Supplier<T> defaultBeanFactory, boolean synchronize) {
+        return newPool(DEFAULT_SIZE, defaultBeanFactory, synchronize);
+    }
+
+    public static <T> BeanPool<T> newPool(int size, Supplier<T> defaultBeanFactory, boolean synchronize) {
+        if(size <= 0) {
+            throw new IllegalArgumentException("size can not be positive.");
+        }
         if(null == defaultBeanFactory) {
             throw new IllegalArgumentException("defaultBeanFactory can not be null.");
         }
 
         if(synchronize) {
-            return new ConcurrentBeanPool<>(defaultBeanFactory);
+            return new ConcurrentBeanPool<>(size, defaultBeanFactory);
         }
-        return new SingleBeanPool<>(defaultBeanFactory);
-    }
-
-    /**
-     * 判断资源池中是否有数据
-     * @return
-     */
-    protected abstract boolean isEmpty();
-
-    /**
-     * 对象资源
-     * @param
-     */
-    class Item {
-
-        Item(T value) {
-            this.value = value;
-            this.next = null;
-        }
-
-        T value;
-
-        Item next;
+        return new SingleBeanPool<>(size, defaultBeanFactory);
     }
 
     public static void main(String[] args) throws InterruptedException {
         String defaultBean = "666";
-        BeanPool<String> executor = BeanPoolFactory.newPool(defaultBean, true);
+        String finalDefaultBean = defaultBean;
+        BeanPool<String> executor = BeanPoolFactory.newPool(20, () -> finalDefaultBean, true);
         ExecutorService pool = Executors.newFixedThreadPool(4);
         defaultBean = null;
 
@@ -80,14 +63,17 @@ public abstract class BeanPoolFactory<T> implements BeanPool<T> {
         pool.execute(() -> System.out.println(executor.allocate()));
         pool.execute(() -> executor.recycle("heihei"));
 
+
+        for (int i = 0; i < 20; i++) {
+            pool.execute(() -> System.out.println(executor.allocate()));
+        }
+
         for (int i = 0; i < 100; i++) {
             int finalI = i;
             pool.execute(() -> executor.recycle(Integer.toString(finalI)));
         }
 
-        for (int i = 0; i < 100; i++) {
-            pool.execute(() -> System.out.println(executor.allocate()));
-        }
+        Thread.sleep(5000L);
 
         Thread.currentThread().join();
     }
