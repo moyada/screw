@@ -14,6 +14,14 @@ public class StopwatchUtil {
 
     private static BeanPool<Stopwatch> executor = BeanPoolFactory.newPool(20, Stopwatch::createUnstarted, true);
 
+    public static long startNano() {
+        return System.nanoTime();
+    }
+
+    public static long stopNano(long startNano) {
+        return (System.nanoTime() - startNano) / 1_000_000L;
+    }
+
     public static Stopwatch start() {
         Stopwatch stopwatch = executor.allocate();
         stopwatch.start();
