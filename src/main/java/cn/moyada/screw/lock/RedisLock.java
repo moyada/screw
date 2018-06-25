@@ -3,6 +3,7 @@ package cn.moyada.screw.lock;
 import cn.moyada.screw.utils.CommonUtil;
 import cn.moyada.screw.yaml.YamlAnalyzer;
 import redis.clients.jedis.HostAndPort;
+import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisCluster;
 import redis.clients.jedis.JedisPoolConfig;
 
@@ -15,14 +16,17 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class RedisLock implements DistributionLock {
 
-//    private final Jedis jedis;
+    private final Jedis[] jedisList;
     private final JedisCluster jedisCluster;
 
-    public RedisLock() {
-//        this.jedis = new Jedis("115.29.10.121", 6379);
-
-        Set<HostAndPort> hostAndPortSet = getConfig("/redis.yaml");
+    public RedisLock(Set<HostAndPort> hostAndPortSet) {
         this.jedisCluster = new JedisCluster(hostAndPortSet, 1000, 1000, 1, null, new JedisPoolConfig());
+        this.jedisList = new Jedis[hostAndPortSet.size()];
+
+        int index = 0;
+        for (HostAndPort hostAndPort : hostAndPortSet) {
+            jedisList[index] = new Jedis(hostAndPort.getHost(), hostAndPort.getPort());
+        }
     }
 
     private static String SERVICE = "service";
@@ -65,10 +69,27 @@ public class RedisLock implements DistributionLock {
         String requestId = CommonUtil.getUUID();
         String result = jedisCluster.set(key, requestId, SET_IF_NOT_EXIST, EXPIRE_TIME_MILLI_SECONDS, expireTime);
         if(LOCK_SUCCESS.equals(result)) {
+            if(!readLock(key, requestId)) {
+                release(key, requestId);
+            }
             requestMap.put(key, requestId);
             return true;
         }
         return false;
+    }
+
+    private boolean readLock(String key, String requestId) {
+        String value;
+        for (Jedis jedis : jedisList) {
+            value = jedis.get(key);
+            if(null == value) {
+                return false;
+            }
+            if(!value.equals(requestId)) {
+                return false;
+            }
+        }
+        return true;
     }
 
     private static final Long RELEASE_SUCCESS = 1L;
@@ -88,6 +109,10 @@ public class RedisLock implements DistributionLock {
             }
         }
 
+        return release(key, requestId);
+    }
+
+    private boolean release(String key, String requestId) {
         String script = "if redis.call('get', KEYS[1]) == ARGV[1] then return redis.call('del', KEYS[1]) else return 0 end";
         Object result = jedisCluster.eval(script, Collections.singletonList(key), Collections.singletonList(requestId));
 
@@ -95,5 +120,10 @@ public class RedisLock implements DistributionLock {
             return true;
         }
         return false;
+    }
+
+    public static void main(String[] args) {
+        Set<HostAndPort> hostAndPortSet = getConfig("/redis.yaml");
+        RedisLock redisLock = new RedisLock(hostAndPortSet);
     }
 }

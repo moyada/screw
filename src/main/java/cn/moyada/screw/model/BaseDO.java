@@ -6,7 +6,7 @@ import java.sql.Timestamp;
  * Created by xueyikang on 2017/12/11.
  */
 public class BaseDO {
-
+    
     private Long id;
 
     private Timestamp dateCreate;

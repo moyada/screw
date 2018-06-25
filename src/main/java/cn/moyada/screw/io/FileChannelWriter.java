@@ -14,7 +14,7 @@ public class FileChannelWriter extends AbstractFileWriter {
         createIfNotExists(fileName);
 
         this.channel = new RandomAccessFile(fileName, "rw").getChannel();
-        this.buffer = ByteBuffer.allocate(BUF_SIZE);
+        this.buffer = ByteBuffer.allocateDirect(BUF_SIZE);
     }
 
     public void write(String data) {

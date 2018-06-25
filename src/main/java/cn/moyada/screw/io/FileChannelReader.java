@@ -18,7 +18,7 @@ public class FileChannelReader extends AbstractFileReader {
     public FileChannelReader(String fileName) throws IOException {
         Path path = Paths.get(fileName);
         this.channel = FileChannel.open(path);
-        this.buffer = ByteBuffer.allocate(BUF_SIZE);
+        this.buffer = ByteBuffer.allocateDirect(BUF_SIZE);
 
         this.data = new byte[BUF_SIZE << 1];
         this.hasNext = true;

@@ -13,18 +13,22 @@ import java.util.Date;
  */
 public class DateUtil {
 
-    private static final ZoneId zoneId = ZoneId.systemDefault();
+    private static final ZoneId ZONE_ID = ZoneId.systemDefault();
+
+    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+
+    private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     /**
      * 获取今天凌晨时间
      * @return 时间字符
      */
     public static String yesterday2Str(){
-        return LocalDate.now().minusDays(1).format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+        return LocalDate.now().minusDays(1).format(DATE_FORMATTER);
     }
 
     public static String day2Str(){
-        return LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+        return LocalDate.now().format(DATE_FORMATTER);
     }
 
 
@@ -33,7 +37,7 @@ public class DateUtil {
      * @return 时间字符
      */
     public static String now2Str(){
-        return LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+        return LocalDateTime.now().format(DATE_TIME_FORMATTER);
     }
 
     /**
@@ -41,7 +45,7 @@ public class DateUtil {
      * @return 时间对象
      */
     public static Date getDay(){
-        return Date.from(LocalDate.now().atStartOfDay().atZone(ZoneId.systemDefault()).toInstant());
+        return Date.from(LocalDate.now().atStartOfDay().atZone(ZONE_ID).toInstant());
     }
 
     /**
@@ -49,7 +53,7 @@ public class DateUtil {
      * @return 时间对象
      */
     public static Date nowDate(){
-        return Date.from(LocalDateTime.now().atZone(ZoneId.systemDefault()).toInstant());
+        return Date.from(LocalDateTime.now().atZone(ZONE_ID).toInstant());
     }
 
     /**
@@ -77,10 +81,5 @@ public class DateUtil {
 
     public static java.sql.Date date2Date(LocalDate localDate){
         return java.sql.Date.valueOf(localDate);
-    }
-
-
-    public static void main(String[] args) {
-        System.out.println(LocalDate.now().minusDays(1).format(DateTimeFormatter.ofPattern("yyyy-MM-dd")).toString());
     }
 }

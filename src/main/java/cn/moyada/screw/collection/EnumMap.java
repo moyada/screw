@@ -104,10 +104,10 @@ public class EnumMap<K extends Enum, V> implements AbstractMap<K, V>  {
     }
 
     private abstract class Padding {
-        private long p1, p2, p3, p4, p5;
+        private long p1, p2, p3, p4, p5, p6, p7;
 
         public long getP() {
-            return p1 + p2 + p3 + p4 + p5;
+            return p1 + p2 + p3 + p4 + p5 + p6 + p7;
         }
     }
 }

@@ -31,7 +31,7 @@ public class CountDownLatchTest {
         @Override
         public void run() {
             System.out.println(Thread.currentThread().getName() + "，到达会议室....");
-            //员工到达会议室 count - 1
+            //员工到达会议室 index - 1
             countDownLatch.countDown();
         }
     }

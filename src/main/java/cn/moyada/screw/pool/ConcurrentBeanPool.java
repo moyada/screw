@@ -40,7 +40,6 @@ public class ConcurrentBeanPool<T> extends AbstractBeanPool<T> {
         if(isEmpty()) {
             return initBean.get();
         }
-        System.out.println("empty");
 
         Item item, next;
 

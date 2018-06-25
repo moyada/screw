@@ -63,6 +63,5 @@ public class FileMappedReader extends AbstractFileReader {
         while (fileChannelReader.hasNext()) {
             System.out.println(fileChannelReader.nextLine());
         }
-        System.out.println(fileChannelReader.channel.isOpen());
     }
 }

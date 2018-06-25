@@ -24,4 +24,16 @@ public class OrderDetailDO {
     public void setCount(Integer count) {
         this.count = count;
     }
+
+    public void test() {
+        getProxy();
+    }
+
+    private void getProxy(Class... ctl) {
+        System.out.println("getProxy1");
+    }
+
+    private void getProxy(ClassLoader classLoader, Class... ctl) {
+        System.out.println("getProxy2");
+    }
 }
