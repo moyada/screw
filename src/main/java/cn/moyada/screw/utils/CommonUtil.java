@@ -52,7 +52,7 @@ public class CommonUtil {
     }
 
     private static long getOffset(Class clazz, Field field) {
-        String key = StringUtil.concat(clazz.getName() + field.getName());
+        String key = ConcatUtil.concat(clazz.getName() + field.getName());
         Long offset = offsetMap.get(key);
         if(null == offset) {
             offset = THE_UNSAFE.objectFieldOffset(field);
@@ -62,7 +62,7 @@ public class CommonUtil {
     }
 
     private static Field getField(Class clazz, String fieldName) {
-        String key = StringUtil.concat(clazz.getName() + fieldName);
+        String key = ConcatUtil.concat(clazz.getName() + fieldName);
         Field field = fieldMap.get(key);
         if(null == field) {
             try {

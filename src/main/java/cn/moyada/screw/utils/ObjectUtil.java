@@ -2,6 +2,7 @@ package cn.moyada.screw.utils;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import jdk.nashorn.internal.ir.debug.ObjectSizeCalculator;
 import net.sf.cglib.beans.BeanCopier;
 
 import java.lang.reflect.Field;
@@ -16,6 +17,10 @@ import java.util.stream.Collectors;
 public class ObjectUtil {
 
     private static Map<Class, BeanCopier> copyMap = new HashMap<>();
+
+    public static long getSize(Object objs) {
+        return ObjectSizeCalculator.getObjectSize(objs);
+    }
 
     /**
      * 复制list集合到指定对象list，对同名称同类型属性进行复制
