@@ -1,6 +1,8 @@
 package cn.moyada.screw.utils;
 
+import java.lang.reflect.Array;
 import java.util.*;
+import java.util.stream.Stream;
 
 /**
  * @author xueyikang
@@ -8,15 +10,15 @@ import java.util.*;
  */
 public class CollectionUtil {
 
-    public static final boolean isEmpty(Collection list) {
+    public static boolean isEmpty(Collection list) {
         return null == list || list.size() == 0;
     }
 
-    public static final boolean isNotEmpty(Collection list) {
+    public static boolean isNotEmpty(Collection list) {
         return !isEmpty(list);
     }
 
-    public static <T> Set<T> combine(Set<T> set1, Set<T> set2) {
+    public static <T> Collection<T> combine(Collection<T> set1, Collection<T> set2) {
         boolean set1empty = null == set1 || set1.size() == 0;
         boolean set2empty = null == set2 || set2.size() == 0;
         if(set1empty) {
@@ -35,7 +37,6 @@ public class CollectionUtil {
         return newSet;
     }
 
-
     public static <E> LinkedList<E> reverse(LinkedList<E> source) {
         LinkedList<E> reverse = new LinkedList<>();
         E value;
@@ -44,6 +45,19 @@ public class CollectionUtil {
         }
 
         return reverse;
+    }
+
+    public static <T> T[] getMapKey(final Map<T, ?> map, Class<T> keyClass) {
+        return getValue(map.keySet().stream(), keyClass);
+    }
+
+    public static <T> T[] getMapValue(final Map<?, T> map, Class<T> valueClass) {
+        return getValue(map.values().stream(), valueClass);
+    }
+
+    @SuppressWarnings("unchecked")
+    private static <T> T[] getValue(Stream<T> stream, Class<T> clazz) {
+        return stream.toArray(size -> (T[]) Array.newInstance(clazz, size));
     }
 }
 

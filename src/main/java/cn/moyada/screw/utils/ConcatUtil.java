@@ -2,6 +2,7 @@ package cn.moyada.screw.utils;
 
 import cn.moyada.screw.pool.BeanPool;
 import cn.moyada.screw.pool.BeanPoolFactory;
+import joptsimple.internal.Strings;
 
 import java.util.Collection;
 import java.util.Iterator;
@@ -14,8 +15,7 @@ import java.util.Map;
 public class ConcatUtil {
 
     private static BeanPool<StringBuilder> sbPool = BeanPoolFactory.newPool(32, () -> new StringBuilder(64), false);
-
-    private static final String EMPTY = "";
+    
     private static final String NULL = "_";
 
     public static String concat(final Object... objs) {
@@ -25,7 +25,7 @@ public class ConcatUtil {
 
         int length = objs.length;
         if(0 == length) {
-            return EMPTY;
+            return Strings.EMPTY;
         }
 
         StringBuilder sb = sbPool.allocate();
@@ -111,7 +111,7 @@ public class ConcatUtil {
             return;
         }
         if(0 == list.size()) {
-            own.append(EMPTY);
+            own.append(Strings.EMPTY);
             return;
         }
 
@@ -126,7 +126,7 @@ public class ConcatUtil {
             return;
         }
         if(0 == map.size()) {
-            own.append(EMPTY);
+            own.append(Strings.EMPTY);
             return;
         }
 
@@ -143,7 +143,7 @@ public class ConcatUtil {
         }
         int length = arr.length;
         if(0 == length) {
-            own.append(EMPTY);
+            own.append(Strings.EMPTY);
             return;
         }
 
@@ -159,7 +159,7 @@ public class ConcatUtil {
         }
         int length = arr.length;
         if(0 == length) {
-            own.append(EMPTY);
+            own.append(Strings.EMPTY);
             return;
         }
         for (int index = 0; index < length; index++) {
@@ -174,7 +174,7 @@ public class ConcatUtil {
         }
         int length = arr.length;
         if(0 == length) {
-            own.append(EMPTY);
+            own.append(Strings.EMPTY);
             return;
         }
         for (int index = 0; index < length; index++) {
@@ -189,7 +189,7 @@ public class ConcatUtil {
         }
         int length = arr.length;
         if(0 == length) {
-            own.append(EMPTY);
+            own.append(Strings.EMPTY);
             return;
         }
         for (int index = 0; index < length; index++) {
@@ -204,7 +204,7 @@ public class ConcatUtil {
         }
         int length = arr.length;
         if(0 == length) {
-            own.append(EMPTY);
+            own.append(Strings.EMPTY);
             return;
         }
         for (int index = 0; index < length; index++) {
@@ -219,7 +219,7 @@ public class ConcatUtil {
         }
         int length = arr.length;
         if(0 == length) {
-            own.append(EMPTY);
+            own.append(Strings.EMPTY);
             return;
         }
         for (int index = 0; index < length; index++) {
@@ -234,7 +234,7 @@ public class ConcatUtil {
         }
         int length = arr.length;
         if(0 == length) {
-            own.append(EMPTY);
+            own.append(Strings.EMPTY);
             return;
         }
         for (int index = 0; index < length; index++) {
@@ -249,7 +249,7 @@ public class ConcatUtil {
         }
         int length = arr.length;
         if(0 == length) {
-            own.append(EMPTY);
+            own.append(Strings.EMPTY);
             return;
         }
         for (int index = 0; index < length; index++) {
@@ -264,7 +264,7 @@ public class ConcatUtil {
         }
         int length = arr.length;
         if(0 == length) {
-            own.append(EMPTY);
+            own.append(Strings.EMPTY);
             return;
         }
         for (int index = 0; index < length; index++) {

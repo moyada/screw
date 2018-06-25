@@ -1,7 +1,9 @@
 package cn.moyada.screw.utils;
 
 
-import java.util.StringTokenizer;
+import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Created by xueyikang on 2017/2/23.
@@ -26,12 +28,8 @@ public class StringUtil {
         return true;
     }
 
-    public static <T> boolean isNotEmpty(String str) {
+    public static boolean isNotEmpty(String str) {
         return !isEmpty(str);
-    }
-
-    public static <T> boolean isEmpty(T[] objs) {
-        return null == objs || objs.length == 0;
     }
 
     public static String[] split(String str, String sperater) {
@@ -76,5 +74,102 @@ public class StringUtil {
             }
         }
         return true;
+    }
+
+    public static char[] getValue(String str) {
+        int length = str.length();
+        char[] value = new char[length];
+        for (int index = 0; index < length; index++) {
+            value[index] = str.charAt(index);
+        }
+        return value;
+    }
+
+    /**
+     * 过滤空元素
+     *
+     * @param strs   对象数组
+     * @return 过滤后数组
+     */
+    public static String[] filterEmpty(final String[] strs) {
+        if(null == strs || 0 == strs.length) {
+            return EMPTY_STRING_ARRAY;
+        }
+        return Arrays.stream(strs)
+                .filter(str -> !StringUtil.isEmpty(str))
+                .distinct()
+                .toArray(String[]::new);
+    }
+
+    /**
+     * 过滤空元素
+     *
+     * @param strs   对象数组
+     * @return 过滤后集合
+     */
+    public static List<String> filterEmptyToList(final String[] strs) {
+        if(null == strs || 0 == strs.length) {
+            return Collections.emptyList();
+        }
+        return Arrays.stream(strs)
+                .filter(str -> !StringUtil.isEmpty(str))
+                .distinct()
+                .collect(Collectors.toList());
+    }
+
+    public static String[] getDiff(final String[] source, final String[] target) {
+        if(0 == target.length) {
+            return source;
+        }
+        return getDiff(Arrays.stream(source), Arrays.stream(target));
+    }
+
+    public static String[] getDiff(final String[] source, final List<String> target) {
+        if(0 == target.size()) {
+            return source;
+        }
+        return getDiff(Arrays.stream(source), target.stream());
+    }
+
+    private static String[] getDiff(final Stream<String> source, final Stream<String> target) {
+        String[] sourceArr = source
+                .sorted(Comparator.comparingInt(String::hashCode))
+                .toArray(String[]::new);
+        String[] targetArr = target
+                .sorted(Comparator.comparingInt(String::hashCode))
+                .toArray(String[]::new);
+        int sLength = sourceArr.length;
+        int tLength = targetArr.length;
+        String s, t, ss, tt;
+        int jj;
+        for (int i=0, j=0; i < sLength; i++, j++) {
+            if(tLength <= j) {
+                break;
+            }
+            s = sourceArr[i];
+            t = targetArr[j];
+            if(s.equals(t)) {
+                sourceArr[i] = null;
+            }
+            else if(s.hashCode() < t.hashCode()) {
+                j--;
+            }
+            else if(s.hashCode() > t.hashCode()) {
+                for (jj=j+1; jj < tLength; jj++) {
+                    ss = sourceArr[i];
+                    tt = targetArr[jj];
+                    if(ss.equals(tt)) {
+                        sourceArr[i] = null;
+                        break;
+                    }
+                    if(ss.hashCode() < tt.hashCode()) {
+                        break;
+                    }
+                }
+            }
+        }
+        return Arrays.stream(sourceArr)
+                .filter(Objects::nonNull)
+                .toArray(String[]::new);
     }
 }

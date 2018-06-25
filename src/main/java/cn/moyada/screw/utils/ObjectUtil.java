@@ -5,6 +5,7 @@ import com.google.common.collect.Maps;
 import jdk.nashorn.internal.ir.debug.ObjectSizeCalculator;
 import net.sf.cglib.beans.BeanCopier;
 
+import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.lang.reflect.Type;
 import java.util.*;
@@ -39,6 +40,16 @@ public class ObjectUtil {
                 .map(t -> copyToObject(t, targetList))
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
+    }
+
+    public static <T, C> C[] copyToArray(final List<T> sourceList, final Class<C> targetArr) {
+        if(null == sourceList || 0 == sourceList.size()) {
+            return (C[]) Array.newInstance(targetArr, 0);
+        }
+        return sourceList.stream()
+                .map(t -> copyToObject(t, targetArr))
+                .filter(Objects::nonNull)
+                .toArray(size -> (C[]) Array.newInstance(targetArr, size));
     }
 
     /**
