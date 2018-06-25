@@ -12,13 +12,10 @@ import java.util.concurrent.TimeUnit;
  */
 public class StopwatchUtil {
 
-    private static BeanPool<Stopwatch> executor = BeanPoolFactory.newPool(20, Stopwatch::createStarted, true);
+    private static BeanPool<Stopwatch> executor = BeanPoolFactory.newPool(20, Stopwatch::createUnstarted, true);
 
     public static Stopwatch start() {
         Stopwatch stopwatch = executor.allocate();
-        if(stopwatch.isRunning()) {
-            stopwatch.reset();
-        }
         stopwatch.start();
         return stopwatch;
     }
