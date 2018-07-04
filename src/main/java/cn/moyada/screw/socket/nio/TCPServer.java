@@ -4,11 +4,12 @@ import cn.moyada.screw.pool.BeanPool;
 import cn.moyada.screw.pool.BeanPoolFactory;
 
 import java.io.IOException;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
+import java.net.*;
 import java.nio.ByteBuffer;
+import java.nio.CharBuffer;
 import java.nio.channels.*;
-import java.nio.charset.Charset;
+import java.nio.charset.CharsetDecoder;
+import java.nio.charset.StandardCharsets;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -19,15 +20,19 @@ import java.util.concurrent.TimeUnit;
  * @author xueyikang
  * @create 2018-04-10 23:11
  */
-public class ServerConnect implements AutoCloseable {
+public class TCPServer implements AutoCloseable {
 
     private final Selector selector;
     private final ServerSocketChannel socketChannel;
 
     private final ThreadPoolExecutor threadPool;
     private final BeanPool<ByteBuffer> bufferBeanPool;
+    private final BeanPool<CharBuffer> charBeanPool;
+    private final BeanPool<StringBuilder> stringBeanPool;
 
-    public ServerConnect(int port) {
+    private final CharsetDecoder decoder = StandardCharsets.UTF_8.newDecoder();
+
+    public TCPServer(int port) {
         try {
             socketChannel = ServerSocketChannel.open();
             socketChannel.socket().bind(new InetSocketAddress(port));
@@ -50,7 +55,9 @@ public class ServerConnect implements AutoCloseable {
                 Runtime.getRuntime().availableProcessors(),
                 1L, TimeUnit.MINUTES,
                 new LinkedBlockingQueue<>());
-        this.bufferBeanPool = BeanPoolFactory.newPool(() -> ByteBuffer.allocateDirect(1024));
+        this.bufferBeanPool = BeanPoolFactory.newConcurrentPool(() -> ByteBuffer.allocateDirect(1024));
+        this.charBeanPool = BeanPoolFactory.newConcurrentPool(() -> CharBuffer.allocate(1024));
+        this.stringBeanPool = BeanPoolFactory.newConcurrentPool(() -> new StringBuilder(1024));
     }
 
     public void start(int timeoutMs) {
@@ -58,12 +65,11 @@ public class ServerConnect implements AutoCloseable {
         Set<SelectionKey> selectionKeys;
         Iterator<SelectionKey> iter;
         SelectionKey key;
-        while(!Thread.interrupted()) {
+        while(true) {
             try {
                 if(selector.select(timeoutMs) == 0){
                     continue;
                 }
-                System.out.println("wait");
                 selectionKeys = selector.selectedKeys();
                 iter = selectionKeys.iterator();
                 while(iter.hasNext()){
@@ -75,22 +81,28 @@ public class ServerConnect implements AutoCloseable {
 
                     iter.remove();
 
-                    if(key.isAcceptable()){
-                        handleAccept(key);
-                    }
-                    else if(key.isReadable()){
-                        handleRead(key);
-                    }
-                    else if(key.isWritable()){
-                        handleWrite(key);
-                    }
+                    dispatch(key);
                 }
-//            selectionKeys.clear();
             } catch (CancelledKeyException passExep) {
                 System.out.println("channel close");
             } catch (IOException e) {
                 e.printStackTrace();
             }
+        }
+    }
+
+    private void dispatch(SelectionKey key) {
+        if(key.isAcceptable()){
+            handleAccept(key);
+        }
+        else if(key.isReadable()){
+            SocketChannel socketChannel = (SocketChannel) key.channel();
+
+            handleRead(socketChannel);
+//            threadPool.execute(() -> handleRead(socketChannel));
+        }
+        else if(key.isWritable()){
+            handleWrite(key);
         }
     }
 
@@ -100,44 +112,66 @@ public class ServerConnect implements AutoCloseable {
         try {
             socket = serverChannel.accept();
             socket.configureBlocking(false);
-            socket.register(key.selector(), SelectionKey.OP_READ, bufferBeanPool.allocate());
+            socket.register(key.selector(), SelectionKey.OP_READ);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-//        key.attach(ByteBuffer.allocateDirect(BUF_SIZE));
+
         InetAddress address = socket.socket().getInetAddress();
         System.out.println("Accepted connection from " + address.getHostAddress());
     }
 
-    private void handleRead(SelectionKey key) {
+    private void handleRead(SocketChannel socketChannel) {
         System.out.println("handle read");
-        SocketChannel socketChannel = (SocketChannel) key.channel();
-        ByteBuffer input = (ByteBuffer) key.attachment();
-        int bytesRead = 0;
+
+//        ByteBuffer input = (ByteBuffer) key.attachment();
+        StringBuilder buf = stringBeanPool.allocate();
+        ByteBuffer input = bufferBeanPool.allocate();
+        CharBuffer charBuffer = charBeanPool.allocate();
+
+        char data;
+        int bytesRead;
         while (true) {
             try {
                 bytesRead = socketChannel.read(input);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-
-            if (bytesRead == 0) {
-                // 客户端已经断开连接.
-                try {
-//                    key.attach(null);
-//                    bufferBeanPool.recycle(input);
-                    // 设置为下一次读取或是写入做准备
-//                    key.interestOps(SelectionKey.OP_ACCEPT | SelectionKey.OP_WRITE);
-//                    socketChannel.register(selector, SelectionKey.OP_WRITE);
-                    socketChannel.write(ByteBuffer.wrap("done".getBytes()));
-                    // socketChannel.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
+                if(bytesRead == 0) {
+                    break;
                 }
+
+                input.flip();
+                decoder.decode(input, charBuffer, false);
+                charBuffer.flip();
+                bytesRead = charBuffer.length();
+
+                for (int index = 0; index < bytesRead; index++) {
+                    data = charBuffer.get(index);
+                    if(data == '\n') {
+                        processRead(socketChannel, buf.toString());
+                        buf.delete(0, index);
+                        continue;
+                    }
+                    buf.append(data);
+                }
+
+                input.clear();
+                charBuffer.clear();
+            } catch (IOException e) {
+                // e.printStackTrace();
+                input.clear();
+                bufferBeanPool.recycle(input);
+                buf.setLength(0);
+                stringBeanPool.recycle(buf);
+                charBuffer.clear();
+                charBeanPool.recycle(charBuffer);
                 return;
             }
-            threadPool.execute(() -> processRead(input));
         }
+
+        input.clear();
+        bufferBeanPool.recycle(input);
+        stringBeanPool.recycle(buf);
+        charBuffer.clear();
+        charBeanPool.recycle(charBuffer);
     }
 
     private void handleWrite(SelectionKey key) {
@@ -145,25 +179,19 @@ public class ServerConnect implements AutoCloseable {
         threadPool.execute(() -> processWrite(key));
     }
 
-    private void processRead(ByteBuffer input) {
-//        ByteBuffer input = ByteBuffer.allocate(1024);
-//        long bytesRead;
-//        try {
-            // 写数据到buffer
-//            bytesRead = sc.read(input);
-            // 切换buffer到读状态,内部指针归位.
-            input.flip();
-            String msg = Charset.forName("UTF-8").decode(input).toString();
-            System.out.println("Server received [" + msg + "] ");//from client address:" + sc.getRemoteAddress());
+    private void processRead(SocketChannel socketChannel, String msg) {
+        System.out.println("Server received [" + msg + "] ");//from client address:" + sc.getRemoteAddress());
 
-            // echo back.
-//            sc.write(ByteBuffer.wrap(msg.getBytes(Charset.forName("UTF-8"))));
+        callbackRead(socketChannel, msg + " done.");
+    }
 
-            // 清空buffer
-            input.clear();
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
+    private void callbackRead(SocketChannel socketChannel, String msg) {
+        // echo back.
+        try {
+            socketChannel.write(ByteBuffer.wrap(msg.getBytes(StandardCharsets.UTF_8)));
+        } catch (IOException e) {
+            // e.printStackTrace();
+        }
     }
 
     private void processWrite(SelectionKey key) {
@@ -190,6 +218,6 @@ public class ServerConnect implements AutoCloseable {
     }
 
     public static void main(String[] args) {
-        new ServerConnect(5443).start(3000);
+        new TCPServer(5443).start(3000);
     }
 }

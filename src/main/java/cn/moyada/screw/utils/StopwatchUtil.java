@@ -12,7 +12,7 @@ import java.util.concurrent.TimeUnit;
  */
 public class StopwatchUtil {
 
-    private static BeanPool<Stopwatch> executor = BeanPoolFactory.newPool(20, Stopwatch::createUnstarted, true);
+    private static BeanPool<Stopwatch> executor = BeanPoolFactory.newConcurrentPool(20, Stopwatch::createUnstarted);
 
     public static long startNano() {
         return System.nanoTime();

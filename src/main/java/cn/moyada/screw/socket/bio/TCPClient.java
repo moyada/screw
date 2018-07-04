@@ -6,7 +6,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 
-public class ClientConnect implements Closeable {
+public class TCPClient implements Closeable {
 
     private final Socket socket;
 
@@ -16,14 +16,14 @@ public class ClientConnect implements Closeable {
     private final byte[] recvBuf = new byte[1024];
     private int recvMsgSize;
 
-    public ClientConnect(String host, int port) throws IOException {
+    public TCPClient(String host, int port) throws IOException {
         socket = new Socket(host, port);
         out = socket.getOutputStream();
         in = socket.getInputStream();
     }
 
     public static void main(String[] args) throws IOException {
-        ClientConnect client = new ClientConnect("127.0.0.1", 5443);
+        TCPClient client = new TCPClient("127.0.0.1", 5443);
         client.send("hahaha");
         client.send("6666");
         client.close();

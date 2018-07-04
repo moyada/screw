@@ -7,6 +7,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
+import java.nio.charset.StandardCharsets;
 import java.util.Iterator;
 import java.util.concurrent.TimeUnit;
 
@@ -14,7 +15,7 @@ import java.util.concurrent.TimeUnit;
  * @author xueyikang
  * @create 2018-04-10 23:02
  */
-public class ClientConnect implements AutoCloseable {
+public class TCPClient implements AutoCloseable {
 
     private ByteBuffer writeBuffer;
     private ByteBuffer readBuffer;
@@ -23,7 +24,7 @@ public class ClientConnect implements AutoCloseable {
 
     private final Selector selector;
 
-    public ClientConnect(String host, int port) {
+    public TCPClient(String host, int port) {
         writeBuffer = ByteBuffer.allocate(1024);
         readBuffer = ByteBuffer.allocate(1024);
         try {
@@ -59,7 +60,7 @@ public class ClientConnect implements AutoCloseable {
                 throw new ConnectException("client finish connecting not yet.");
             }
             writeBuffer.clear();
-            writeBuffer.put(msg.getBytes());
+            writeBuffer.put(msg.getBytes(StandardCharsets.UTF_8));
             writeBuffer.flip();
             while(writeBuffer.hasRemaining()){
                 socketChannel.write(writeBuffer);
@@ -124,19 +125,22 @@ public class ClientConnect implements AutoCloseable {
 
     public static void main(String[] args) throws InterruptedException, IOException {
 //        new Thread(() -> {
-//            ClientConnect client1 = new ClientConnect("127.0.0.1", 5443);
+//            TCPClient client1 = new TCPClient("127.0.0.1", 5443);
 //            client1.write("haha");
 ////            client1.read();
 //        }).start();
 
-        ClientConnect client = new ClientConnect("127.0.0.1", 5443);
-        client.write("hi");
-        TimeUnit.SECONDS.sleep(1);
+        TCPClient client = new TCPClient("127.0.0.1", 5443);
+
+        for (int i = 0; i < 10; i++) {
+            client.write("hi哈 " + i + " \n");
+            TimeUnit.MILLISECONDS.sleep(10);
+        }
         System.out.println("second");
-        client.write("hei");
-        TimeUnit.SECONDS.sleep(1);
-        Thread.currentThread().join();
-        client.close();
+        client.write("hggggggggei\n");
+        TimeUnit.SECONDS.sleep(5);
+//        client.close();
+//        Thread.currentThread().join();
 //        client.read();
 //        client.write("6666");
 //        client.write("laotie");

@@ -12,19 +12,19 @@ import java.net.SocketAddress;
  * @author xueyikang
  * @create 2018-04-10 23:02
  */
-public class ServerConnect implements Closeable {
+public class TCPServer implements Closeable {
 
     private final ServerSocket serverSocket;
 
     private InputStream in = null;
     private OutputStream out = null;
 
-    public ServerConnect(int port) throws IOException {
+    public TCPServer(int port) throws IOException {
         serverSocket = new ServerSocket(port);
     }
 
     public static void main(String[] args) throws IOException {
-        new ServerConnect(5443).start();
+        new TCPServer(5443).start();
     }
 
     public void start(){

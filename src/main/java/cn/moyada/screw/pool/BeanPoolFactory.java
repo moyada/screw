@@ -1,7 +1,6 @@
 package cn.moyada.screw.pool;
 
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.*;
 import java.util.function.Supplier;
 
 /**
@@ -13,31 +12,23 @@ public abstract class BeanPoolFactory {
 
     protected final static int DEFAULT_SIZE = 1024;
 
-    public static <T> BeanPool<T> newPool(T defaultBean) {
-        return newPool(defaultBean, false);
-    }
-
-    public static <T> BeanPool<T> newPool(T defaultBean, boolean synchronize) {
-        return newPool(DEFAULT_SIZE, defaultBean, synchronize);
-    }
-
-    public static <T> BeanPool<T> newPool(int size, T defaultBean, boolean synchronize) {
-        if(null == defaultBean) {
-            throw new IllegalArgumentException("defaultBean can not be null.");
-        }
-        final T bean = defaultBean;
-        return newPool(size, () -> bean, synchronize);
-    }
-
     public static <T> BeanPool<T> newPool(Supplier<T> defaultBeanFactory) {
-        return newPool(defaultBeanFactory, false);
+        return newPool(DEFAULT_SIZE, defaultBeanFactory);
     }
 
-    public static <T> BeanPool<T> newPool(Supplier<T> defaultBeanFactory, boolean synchronize) {
-        return newPool(DEFAULT_SIZE, defaultBeanFactory, synchronize);
+    public static <T> BeanPool<T> newPool(int size, Supplier<T> defaultBeanFactory) {
+        return newPool(size, defaultBeanFactory, false);
     }
 
-    public static <T> BeanPool<T> newPool(int size, Supplier<T> defaultBeanFactory, boolean synchronize) {
+    public static <T> BeanPool<T> newConcurrentPool(Supplier<T> defaultBeanFactory) {
+        return newConcurrentPool(DEFAULT_SIZE, defaultBeanFactory);
+    }
+
+    public static <T> BeanPool<T> newConcurrentPool(int size, Supplier<T> defaultBeanFactory) {
+        return newPool(size, defaultBeanFactory, true);
+    }
+
+    private static <T> BeanPool<T> newPool(int size, Supplier<T> defaultBeanFactory, boolean synchronize) {
         if(size <= 0) {
             throw new IllegalArgumentException("size can not be positive.");
         }
@@ -54,12 +45,22 @@ public abstract class BeanPoolFactory {
     public static void main(String[] args) throws InterruptedException {
         String defaultBean = "666";
         String finalDefaultBean = defaultBean;
-        BeanPool<String> executor = BeanPoolFactory.newPool(20, () -> finalDefaultBean, true);
+        BeanPool<String> executor = BeanPoolFactory.newConcurrentPool(20, () -> finalDefaultBean);
         ExecutorService pool = Executors.newFixedThreadPool(4);
         defaultBean = null;
 
         executor.recycle("haha");
-        pool.execute(() -> System.out.println(executor.allocate()));
+
+        Future<?> submit = pool.submit(() -> System.out.println(executor.allocate()));
+        try {
+            submit.get(100L, TimeUnit.MILLISECONDS);
+        } catch (ExecutionException e) {
+            System.out.println("error");
+            submit.cancel(true);
+        } catch (TimeoutException e) {
+            System.out.println("timeout");
+            submit.cancel(true);
+        }
         pool.execute(() -> System.out.println(executor.allocate()));
         pool.execute(() -> executor.recycle("heihei"));
 

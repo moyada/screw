@@ -14,7 +14,7 @@ import java.util.Map;
  */
 public class ConcatUtil {
 
-    private static BeanPool<StringBuilder> sbPool = BeanPoolFactory.newPool(32, () -> new StringBuilder(64), false);
+    private static BeanPool<StringBuilder> sbPool = BeanPoolFactory.newPool(32, () -> new StringBuilder(64));
     
     private static final String NULL = "_";
 
