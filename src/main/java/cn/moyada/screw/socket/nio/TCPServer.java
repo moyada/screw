@@ -10,8 +10,8 @@ import java.nio.CharBuffer;
 import java.nio.channels.*;
 import java.nio.charset.CharsetDecoder;
 import java.nio.charset.StandardCharsets;
-import java.util.Iterator;
-import java.util.Set;
+import java.util.*;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -55,6 +55,7 @@ public class TCPServer implements AutoCloseable {
                 Runtime.getRuntime().availableProcessors(),
                 1L, TimeUnit.MINUTES,
                 new LinkedBlockingQueue<>());
+
         this.bufferBeanPool = BeanPoolFactory.newConcurrentPool(() -> ByteBuffer.allocateDirect(1024));
         this.charBeanPool = BeanPoolFactory.newConcurrentPool(() -> CharBuffer.allocate(1024));
         this.stringBeanPool = BeanPoolFactory.newConcurrentPool(() -> new StringBuilder(1024));
@@ -99,7 +100,6 @@ public class TCPServer implements AutoCloseable {
             SocketChannel socketChannel = (SocketChannel) key.channel();
 
             handleRead(socketChannel);
-//            threadPool.execute(() -> handleRead(socketChannel));
         }
         else if(key.isWritable()){
             handleWrite(key);
@@ -124,54 +124,30 @@ public class TCPServer implements AutoCloseable {
     private void handleRead(SocketChannel socketChannel) {
         System.out.println("handle read");
 
-//        ByteBuffer input = (ByteBuffer) key.attachment();
-        StringBuilder buf = stringBeanPool.allocate();
-        ByteBuffer input = bufferBeanPool.allocate();
-        CharBuffer charBuffer = charBeanPool.allocate();
-
-        char data;
+        List<ByteBuffer> bufferList = new ArrayList<>();
         int bytesRead;
+        ByteBuffer input;
+
         while (true) {
+            input = bufferBeanPool.allocate();
             try {
                 bytesRead = socketChannel.read(input);
-                if(bytesRead == 0) {
+                if (bytesRead == 0) {
                     break;
                 }
-
-                input.flip();
-                decoder.decode(input, charBuffer, false);
-                charBuffer.flip();
-                bytesRead = charBuffer.length();
-
-                for (int index = 0; index < bytesRead; index++) {
-                    data = charBuffer.get(index);
-                    if(data == '\n') {
-                        processRead(socketChannel, buf.toString());
-                        buf.delete(0, index);
-                        continue;
-                    }
-                    buf.append(data);
-                }
-
-                input.clear();
-                charBuffer.clear();
+                bufferList.add(input);
             } catch (IOException e) {
                 // e.printStackTrace();
-                input.clear();
-                bufferBeanPool.recycle(input);
-                buf.setLength(0);
-                stringBeanPool.recycle(buf);
-                charBuffer.clear();
-                charBeanPool.recycle(charBuffer);
+                clearByteBuffer(bufferList);
                 return;
             }
         }
 
-        input.clear();
-        bufferBeanPool.recycle(input);
-        stringBeanPool.recycle(buf);
-        charBuffer.clear();
-        charBeanPool.recycle(charBuffer);
+        if(bufferList.isEmpty()) {
+            return;
+        }
+
+        threadPool.execute(() -> processRead(socketChannel, bufferList));
     }
 
     private void handleWrite(SelectionKey key) {
@@ -179,10 +155,42 @@ public class TCPServer implements AutoCloseable {
         threadPool.execute(() -> processWrite(key));
     }
 
-    private void processRead(SocketChannel socketChannel, String msg) {
-        System.out.println("Server received [" + msg + "] ");//from client address:" + sc.getRemoteAddress());
+    private void processRead(SocketChannel socketChannel, List<ByteBuffer> bufferList) {
+        StringBuilder buf = stringBeanPool.allocate();
+        CharBuffer charBuffer = charBeanPool.allocate();
 
-        callbackRead(socketChannel, msg + " done.");
+        int bytesRead;
+        char data;
+        String msg;
+        for (ByteBuffer input : bufferList) {
+            input.flip();
+            decoder.decode(input, charBuffer, false);
+            charBuffer.flip();
+            bytesRead = charBuffer.length();
+
+            for (int index = 0; index < bytesRead; index++) {
+                data = charBuffer.get(index);
+                if(data == '\n') {
+
+                    msg = buf.toString();
+
+                    System.out.println("Server received [" + msg + "] ");//from client address:" + sc.getRemoteAddress());
+
+                    callbackRead(socketChannel, msg + " done.");
+
+                    buf.delete(0, index);
+                    continue;
+                }
+                buf.append(data);
+            }
+
+            charBuffer.clear();
+        }
+        clearByteBuffer(bufferList);
+
+        stringBeanPool.recycle(buf);
+        charBuffer.clear();
+        charBeanPool.recycle(charBuffer);
     }
 
     private void callbackRead(SocketChannel socketChannel, String msg) {
@@ -205,6 +213,16 @@ public class TCPServer implements AutoCloseable {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    private void clearByteBuffer(List<ByteBuffer> bufferList) {
+        if(bufferList.isEmpty()) {
+            return;
+        }
+        bufferList.forEach(buffer -> {
+            buffer.clear();
+            bufferBeanPool.recycle(buffer);
+        });
     }
 
     @Override
