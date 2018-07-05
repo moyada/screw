@@ -6,7 +6,6 @@ import java.net.InetSocketAddress;
 import java.net.PortUnreachableException;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
-import java.nio.channels.ClosedChannelException;
 import java.nio.channels.DatagramChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
@@ -20,9 +19,8 @@ import java.util.Iterator;
 public class UDPClient implements Closeable {
 
     // UDP协议客户端
-    private String serverIp = "127.0.0.1";
-    private int port = 9975;
-    // private ServerSocketChannel serverSocketChannel;
+    private InetSocketAddress address;
+
     private final DatagramChannel channel;
     private final Selector selector;
 
@@ -31,6 +29,7 @@ public class UDPClient implements Closeable {
     public UDPClient(String host, int port) throws IOException {
         selector = Selector.open();
         channel = DatagramChannel.open();
+        address = new InetSocketAddress(host, port);
         System.out.println("客户器启动");
     }
 
@@ -38,7 +37,7 @@ public class UDPClient implements Closeable {
     public void send(String str) {
         try {
             channel.configureBlocking(false);
-            channel.connect(new InetSocketAddress(serverIp, port));// 连接服务端
+            channel.connect(address);// 连接服务端
             channel.write(ByteBuffer.wrap(str.getBytes(StandardCharsets.UTF_8)));
             channel.register(selector, SelectionKey.OP_READ);
         } catch (IOException e) {
@@ -47,100 +46,70 @@ public class UDPClient implements Closeable {
     }
 
     /* 服务器服务方法 */
-    public void listener() throws IOException {
-        /** 外循环，已经发生了SelectionKey数目 */
-        while (selector.select() > 0) {
-            /* 得到已经被捕获了的SelectionKey的集合 */
-            Iterator iterator = selector.selectedKeys().iterator();
-            while (iterator.hasNext()) {
-                SelectionKey key = null;
-                try {
-                    key = (SelectionKey) iterator.next();
-                    iterator.remove();
-                    if (key.isReadable()) {
-                        receive(key);
-                    }
-                    if (key.isWritable()) {
-                        // send(key);
-                    }
-                } catch (IOException e) {
-                    e.printStackTrace();
-                    try {
-                        key.cancel();
-                        key.channel().close();
-                    } catch (ClosedChannelException cex) {
-                        e.printStackTrace();
+    public void listener() {
+        new Thread(this::dispatch).start();
+    }
+
+    private void dispatch() {
+        SelectionKey key;
+        while(true) {
+            try {
+                if (selector.select(3000L) > 0) {
+                    /* 得到已经被捕获了的SelectionKey的集合 */
+                    Iterator<SelectionKey> iterator = selector.selectedKeys().iterator();
+                    while (iterator.hasNext()) {
+                        key = iterator.next();
+                        iterator.remove();
+
+                        if (key.isReadable()) {
+                            receive(key);
+                        }
                     }
                 }
+            } catch (IOException e) {
+                e.printStackTrace();
             }
-            /* 内循环完 */
         }
-        /* 外循环完 */
     }
 
     /* 接收 */
-    synchronized public void receive(SelectionKey key) throws IOException {
-        String threadName = Thread.currentThread().getName();
-        if (key == null)
-            return;
+    private void receive(SelectionKey key) throws IOException {
+        // ：接收时需要考虑字节长度
+        DatagramChannel sc = (DatagramChannel) key.channel();
+        StringBuilder content = new StringBuilder();
         try {
-            // ***用channel.receive()获取消息***//
-            // ：接收时需要考虑字节长度
-            DatagramChannel sc = (DatagramChannel) key.channel();
-            StringBuilder content = new StringBuilder();
-            //第一次接；udp采用数据报模式，发送多少次，接收多少次
-
+            buf.clear();
             SocketAddress address = sc.receive(buf); // read into buffer.
-            System.out.println(threadName + "\t" + address.toString());
-            buf.flip(); // make buffer ready for read
 
-            byte[] bytes = new byte[buf.limit()];
+            buf.flip(); // make buffer ready for read
+            int limit = buf.limit();
+            byte[] bytes = new byte[limit];
             while (buf.hasRemaining()) {
-                buf.get(bytes, 0, buf.limit());
-                content.append(new String(bytes, 0, buf.limit()));
+                buf.get(bytes, 0, limit);
+                content.append(new String(bytes, 0, limit));
             }
-            buf.clear(); // make buffer ready for writing次
-            System.out.println("接收：" + address.toString() + " - " + content.toString().trim());
+
+            System.out.println("接收：" + address.toString() + " - " + content.toString());
 
         } catch (PortUnreachableException ex) {
-            System.out.println(threadName + "服务端端口未找到!");
+            System.out.println("服务端端口未找到!");
         }
-        send(2);
     }
 
-    boolean flag = false;
-
-    public void send(int i) {
-        if (flag)
-            return;
-        try {
-            // channel.write(ByteBuffer.wrap(new String("客户端请求获取消息(第"+i+"次)").getBytes()));
-            // channel.register(selector, SelectionKey.OP_READ );
-            ByteBuffer buf2 = ByteBuffer.allocate(48);
-            buf2.clear();
-            buf2.put(("客户端请求获取消息(第" + i + "次)").getBytes());
-            buf2.flip();
-            channel.write(buf2);
-            channel.register(selector, SelectionKey.OP_READ );
-//			int bytesSent = channel.send(buf2, new InetSocketAddress(serverIp,port)); // 将消息回送给服务端
-        } catch (IOException e) {
-            e.printStackTrace();
+    @Override
+    public void close() throws IOException {
+        if (null != channel && channel.isOpen()) {
+            channel.close();
         }
-        flag = true;
+
+        if (null != selector && selector.isOpen()) {
+            selector.close();
+        }
     }
 
-    int y = 0;
-
-    public void send(SelectionKey key) {
-        if (key == null)
-            return;
-        // ByteBuffer buff = (ByteBuffer) key.attachment();
-        DatagramChannel sc = (DatagramChannel) key.channel();
-        try {
-            sc.write(ByteBuffer.wrap(new String("aaaa").getBytes()));
-        } catch (IOException e1) {
-            e1.printStackTrace();
-        }
-        System.out.println("send2() " + (++y));
+    public static void main(String[] args) throws IOException {
+        UDPClient udpClient = new UDPClient("127.0.0.1", 5555);
+        udpClient.listener();
+        udpClient.send("hello");
     }
 }
