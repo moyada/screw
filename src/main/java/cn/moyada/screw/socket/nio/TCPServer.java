@@ -61,6 +61,7 @@ public class TCPServer implements AutoCloseable {
         this.stringBeanPool = BeanPoolFactory.newConcurrentPool(() -> new StringBuilder(1024));
     }
 
+    @SuppressWarnings("InfiniteLoopStatement")
     public void start(int timeoutMs) {
         timeoutMs = timeoutMs < 0 ? 0 : timeoutMs;
         Set<SelectionKey> selectionKeys;
@@ -97,9 +98,7 @@ public class TCPServer implements AutoCloseable {
             handleAccept(key);
         }
         else if(key.isReadable()){
-            SocketChannel socketChannel = (SocketChannel) key.channel();
-
-            handleRead(socketChannel);
+            handleRead(key);
         }
         else if(key.isWritable()){
             handleWrite(key);
@@ -109,20 +108,24 @@ public class TCPServer implements AutoCloseable {
     private void handleAccept(SelectionKey key) {
         ServerSocketChannel serverChannel = (ServerSocketChannel) key.channel();
         SocketChannel socket;
+        String address;
         try {
             socket = serverChannel.accept();
             socket.configureBlocking(false);
-            socket.register(key.selector(), SelectionKey.OP_READ);
+            address = socket.getRemoteAddress().toString();
+            socket.register(key.selector(), SelectionKey.OP_READ, address);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
 
-        InetAddress address = socket.socket().getInetAddress();
-        System.out.println("Accepted connection from " + address.getHostAddress());
+        System.out.println("Accepted connection from " + address);
+//        InetAddress address = socket.socket().getInetAddress();
+//        System.out.println("Accepted connection from " + address.getHostAddress());
     }
 
-    private void handleRead(SocketChannel socketChannel) {
+    private void handleRead(SelectionKey key) {
         System.out.println("handle read");
+        SocketChannel socketChannel = (SocketChannel) key.channel();
 
         List<ByteBuffer> bufferList = new ArrayList<>();
         int bytesRead;
@@ -149,12 +152,6 @@ public class TCPServer implements AutoCloseable {
 
         threadPool.execute(() -> processRead(socketChannel, bufferList));
     }
-
-    private void handleWrite(SelectionKey key) {
-        System.out.println("handle write");
-        threadPool.execute(() -> processWrite(key));
-    }
-
     private void processRead(SocketChannel socketChannel, List<ByteBuffer> bufferList) {
         StringBuilder buf = stringBeanPool.allocate();
         CharBuffer charBuffer = charBeanPool.allocate();
@@ -174,7 +171,7 @@ public class TCPServer implements AutoCloseable {
 
                     msg = buf.toString();
 
-                    System.out.println("Server received [" + msg + "] ");//from client address:" + sc.getRemoteAddress());
+                    System.out.println("Server received [" + msg + "] ");
 
                     callbackRead(socketChannel, msg + " done.");
 
@@ -202,6 +199,11 @@ public class TCPServer implements AutoCloseable {
         }
     }
 
+    private void handleWrite(SelectionKey key) {
+        System.out.println("handle write");
+        threadPool.execute(() -> processWrite(key));
+    }
+
     private void processWrite(SelectionKey key) {
         SocketChannel client = (SocketChannel) key.channel();
         ByteBuffer buffer = (ByteBuffer) key.attachment();
@@ -227,15 +229,27 @@ public class TCPServer implements AutoCloseable {
 
     @Override
     public void close() throws IOException {
-        if(selector!=null){
+        if(selector != null && selector.isOpen()){
             selector.close();
         }
-        if(socketChannel!=null){
+        if(socketChannel != null && socketChannel.isOpen()){
             socketChannel.close();
         }
     }
 
     public static void main(String[] args) {
-        new TCPServer(5443).start(3000);
+        Scanner sc = new Scanner(System.in);
+
+        System.out.print("请输入ip：");
+        String in = sc.nextLine();
+
+        int port;
+        try {
+            port = Integer.valueOf(in);
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException("port need a number");
+        }
+
+        new TCPServer(port).start(3000);
     }
 }

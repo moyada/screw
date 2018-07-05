@@ -1,5 +1,7 @@
 package cn.moyada.screw.socket.nio;
 
+import cn.moyada.screw.utils.StringUtil;
+
 import java.io.IOException;
 import java.net.ConnectException;
 import java.net.InetSocketAddress;
@@ -9,6 +11,7 @@ import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 import java.nio.charset.StandardCharsets;
 import java.util.Iterator;
+import java.util.Scanner;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -54,13 +57,13 @@ public class TCPClient implements AutoCloseable {
         }).start();
     }
 
-    public void write(String msg) {
+    public void send(String msg) {
         try {
             if(!socketChannel.finishConnect()) {
                 throw new ConnectException("client finish connecting not yet.");
             }
             writeBuffer.clear();
-            writeBuffer.put(msg.getBytes(StandardCharsets.UTF_8));
+            writeBuffer.put((msg + '\n').getBytes(StandardCharsets.UTF_8));
             writeBuffer.flip();
             while(writeBuffer.hasRemaining()){
                 socketChannel.write(writeBuffer);
@@ -118,31 +121,68 @@ public class TCPClient implements AutoCloseable {
 
     @Override
     public void close() throws IOException {
-        if(socketChannel!=null){
+        if (socketChannel != null && socketChannel.isConnected()){
             socketChannel.close();
         }
     }
 
     public static void main(String[] args) throws InterruptedException, IOException {
-//        new Thread(() -> {
-//            TCPClient client1 = new TCPClient("127.0.0.1", 5443);
-//            client1.write("haha");
-////            client1.read();
-//        }).start();
+        Scanner sc=new Scanner(System.in);
 
-        TCPClient client = new TCPClient("127.0.0.1", 5443);
+        System.out.print("请输入ip：");
+        String in = sc.nextLine();
 
-        for (int i = 0; i < 10; i++) {
-            client.write("hi哈 " + i + " \n");
-            TimeUnit.MILLISECONDS.sleep(10);
+        if(StringUtil.isEmpty(in)) {
+            throw new NullPointerException("ip can not be null.");
         }
-        System.out.println("second");
-        client.write("hggggggggei\n");
-        TimeUnit.SECONDS.sleep(5);
-//        client.close();
-//        Thread.currentThread().join();
-//        client.read();
-//        client.write("6666");
-//        client.write("laotie");
+        if(!checkHost(in)) {
+            throw new IllegalArgumentException("host error");
+        }
+        String host = in;
+
+        System.out.print("请输入端口：");
+        in = sc.next();
+
+        int port;
+        try {
+            port = Integer.valueOf(in);
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException("port need a number");
+        }
+
+
+        TCPClient client = new TCPClient(host, port);
+
+        System.out.print("请输入：");
+        while (true) {
+            in = sc.nextLine();
+            if(StringUtil.isEmpty(in)) {
+                continue;
+            }
+            if(in.equals("exit")) {
+                break;
+            }
+
+            client.send(in);
+        }
+
+        TimeUnit.SECONDS.sleep(1L);
+        client.close();
+    }
+
+    private static boolean checkHost(String host) {
+        String[] split = host.split("\\.");
+        if(split.length != 4) {
+            return false;
+        }
+
+        for (String s : split) {
+            try {
+                Integer.valueOf(s);
+            } catch (NumberFormatException e) {
+                return false;
+            }
+        }
+        return true;
     }
 }
