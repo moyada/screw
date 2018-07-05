@@ -20,16 +20,14 @@ import java.util.concurrent.TimeUnit;
  */
 public class TCPClient implements AutoCloseable {
 
-    private ByteBuffer writeBuffer;
-    private ByteBuffer readBuffer;
+    private final ByteBuffer writeBuffer;
+    private final ByteBuffer readBuffer;
 
     private final SocketChannel socketChannel;
 
     private final Selector selector;
 
     public TCPClient(String host, int port) {
-        writeBuffer = ByteBuffer.allocate(1024);
-        readBuffer = ByteBuffer.allocate(1024);
         try {
             socketChannel = SocketChannel.open();
             socketChannel.configureBlocking(false);
@@ -46,6 +44,8 @@ public class TCPClient implements AutoCloseable {
             }
             throw new RuntimeException(e);
         }
+        writeBuffer = ByteBuffer.allocateDirect(2048);
+        readBuffer = ByteBuffer.allocateDirect(2048);
         System.out.println("Client start");
 
         new Thread(() -> {
@@ -63,7 +63,7 @@ public class TCPClient implements AutoCloseable {
                 throw new ConnectException("client finish connecting not yet.");
             }
             writeBuffer.clear();
-            writeBuffer.put((msg + '\n').getBytes(StandardCharsets.UTF_8));
+            writeBuffer.put(decode(msg));
             writeBuffer.flip();
             while(writeBuffer.hasRemaining()){
                 socketChannel.write(writeBuffer);
@@ -71,6 +71,10 @@ public class TCPClient implements AutoCloseable {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    private byte[] decode(String msg) {
+        return (msg + '\n').getBytes(StandardCharsets.UTF_8);
     }
 
     private void listener() throws IOException {
@@ -112,10 +116,15 @@ public class TCPClient implements AutoCloseable {
         SocketChannel channel = (SocketChannel)key.channel();
 
         // 创建读取的缓冲区
-        channel.read(readBuffer);
-        byte[] data = readBuffer.array();
-        String msg = new String(data).trim();
-        System.out.println(" 客户端收到信息："+msg);
+        int readIndex = channel.read(readBuffer);
+        if(0 == readIndex) {
+            return;
+        }
+        readBuffer.flip();
+        byte[] bytes = new byte[readIndex];
+        readBuffer.get(bytes, 0, readIndex);
+
+        System.out.println(" 客户端收到信息：" + new String(bytes, 0, readIndex));
         readBuffer.clear();
     }
 
@@ -132,24 +141,23 @@ public class TCPClient implements AutoCloseable {
         System.out.print("请输入ip：");
         String in = sc.nextLine();
 
+        String host;
         if(StringUtil.isEmpty(in)) {
-            throw new NullPointerException("ip can not be null.");
+            host = "127.0.0.1";
         }
-        if(!checkHost(in)) {
-            throw new IllegalArgumentException("host error");
+        else {
+            if (!checkHost(in)) {
+                throw new IllegalArgumentException("host error");
+            }
+            host = in;
         }
-        String host = in;
 
         System.out.print("请输入端口：");
-        in = sc.next();
 
-        int port;
-        try {
-            port = Integer.valueOf(in);
-        } catch (NumberFormatException e) {
-            throw new IllegalArgumentException("port need a number");
+        int port = sc.nextInt();
+        if(port < 1000) {
+            throw new IllegalArgumentException("port must be bigger than 1000");
         }
-
 
         TCPClient client = new TCPClient(host, port);
 
@@ -168,6 +176,7 @@ public class TCPClient implements AutoCloseable {
 
         TimeUnit.SECONDS.sleep(1L);
         client.close();
+        Runtime.getRuntime().exit(1);
     }
 
     private static boolean checkHost(String host) {

@@ -2,37 +2,33 @@ package cn.moyada.screw.socket.nio;
 
 import cn.moyada.screw.pool.BeanPool;
 import cn.moyada.screw.pool.BeanPoolFactory;
+import cn.moyada.screw.utils.StringUtil;
 
 import java.io.IOException;
-import java.net.*;
+import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
-import java.nio.CharBuffer;
 import java.nio.channels.*;
-import java.nio.charset.CharsetDecoder;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 /**
  * @author xueyikang
  * @create 2018-04-10 23:11
  */
 public class TCPServer implements AutoCloseable {
+    private static int DEFAULT_BUF_SIZE = 1024;
 
     private final Selector selector;
     private final ServerSocketChannel socketChannel;
 
-    private final ThreadPoolExecutor threadPool;
+    private final ExecutorService threadPool;
     private final BeanPool<ByteBuffer> bufferBeanPool;
-    private final BeanPool<CharBuffer> charBeanPool;
-    private final BeanPool<StringBuilder> stringBeanPool;
+    private final BeanPool<byte[]> btyesBeanPool;
 
-    private final CharsetDecoder decoder = StandardCharsets.UTF_8.newDecoder();
+//    private final CharsetDecoder decoder = StandardCharsets.UTF_8.newDecoder();
 
-    public TCPServer(int port) {
+    public TCPServer(int port, int size) {
         try {
             socketChannel = ServerSocketChannel.open();
             socketChannel.socket().bind(new InetSocketAddress(port));
@@ -51,18 +47,18 @@ public class TCPServer implements AutoCloseable {
             }
             throw new RuntimeException(e);
         }
-        this.threadPool = new ThreadPoolExecutor(0,
-                Runtime.getRuntime().availableProcessors(),
-                1L, TimeUnit.MINUTES,
-                new LinkedBlockingQueue<>());
+        this.threadPool = Executors.newWorkStealingPool(Runtime.getRuntime().availableProcessors());
+//        this.threadPool = new ThreadPoolExecutor(1,
+//                Runtime.getRuntime().availableProcessors(),
+//                1L, TimeUnit.MINUTES,
+//                new LinkedBlockingQueue<>());
 
-        this.bufferBeanPool = BeanPoolFactory.newConcurrentPool(() -> ByteBuffer.allocateDirect(1024));
-        this.charBeanPool = BeanPoolFactory.newConcurrentPool(() -> CharBuffer.allocate(1024));
-        this.stringBeanPool = BeanPoolFactory.newConcurrentPool(() -> new StringBuilder(1024));
+        this.bufferBeanPool = BeanPoolFactory.newConcurrentPool(size, () -> ByteBuffer.allocateDirect(DEFAULT_BUF_SIZE));
+        this.btyesBeanPool = BeanPoolFactory.newConcurrentPool(size, () -> new byte[DEFAULT_BUF_SIZE]);
     }
 
     @SuppressWarnings("InfiniteLoopStatement")
-    public void start(int timeoutMs) {
+    public void start(long timeoutMs) {
         timeoutMs = timeoutMs < 0 ? 0 : timeoutMs;
         Set<SelectionKey> selectionKeys;
         Iterator<SelectionKey> iter;
@@ -76,7 +72,6 @@ public class TCPServer implements AutoCloseable {
                 iter = selectionKeys.iterator();
                 while(iter.hasNext()){
                     key = iter.next();
-
                     if(!key.isValid()) {
                         continue;
                     }
@@ -132,9 +127,25 @@ public class TCPServer implements AutoCloseable {
         ByteBuffer input;
 
         while (true) {
+            System.out.println("read");
+            if(!socketChannel.isOpen()) {
+                System.out.println("88");
+                key.interestOps(SelectionKey.OP_ACCEPT);
+            }
+            if(!socketChannel.isConnected()) {
+                System.out.println("88");
+                key.interestOps(SelectionKey.OP_ACCEPT);
+            }
+
             input = bufferBeanPool.allocate();
             try {
                 bytesRead = socketChannel.read(input);
+                if (bytesRead == -1) {
+                    key.cancel();
+                    socketChannel.close();
+                    clearByteBuffer(bufferList);
+                    return;
+                }
                 if (bytesRead == 0) {
                     break;
                 }
@@ -150,50 +161,58 @@ public class TCPServer implements AutoCloseable {
             return;
         }
 
-        threadPool.execute(() -> processRead(socketChannel, bufferList));
+        threadPool.execute(() -> handleSocket(socketChannel, bufferList));
     }
-    private void processRead(SocketChannel socketChannel, List<ByteBuffer> bufferList) {
-        StringBuilder buf = stringBeanPool.allocate();
-        CharBuffer charBuffer = charBeanPool.allocate();
 
-        int bytesRead;
-        char data;
+    private void handleSocket(SocketChannel socketChannel, List<ByteBuffer> bufferList) {
+        byte[] bytes = btyesBeanPool.allocate();
+
+        int bytesRead, start;
         String msg;
+
         for (ByteBuffer input : bufferList) {
             input.flip();
-            decoder.decode(input, charBuffer, false);
-            charBuffer.flip();
-            bytesRead = charBuffer.length();
 
+            bytesRead = input.limit();
+
+            // if array can not be contain
+//            if(bytes.length < bytesRead) {
+//                int finalBytesRead = bytesRead;
+//                bytes = btyesBeanPool.allocate(() -> new byte[finalBytesRead]);
+//            }
+            input.get(bytes, 0, bytesRead);
+
+            start = 0;
             for (int index = 0; index < bytesRead; index++) {
-                data = charBuffer.get(index);
-                if(data == '\n') {
+                if(bytes[index] == '\n') {
 
-                    msg = buf.toString();
+                    msg = processRead(new String(bytes, start, index));
 
-                    System.out.println("Server received [" + msg + "] ");
+                    callbackRead(socketChannel, input, msg);
 
-                    callbackRead(socketChannel, msg + " done.");
-
-                    buf.delete(0, index);
-                    continue;
+                    start = index+1;
                 }
-                buf.append(data);
             }
-
-            charBuffer.clear();
         }
         clearByteBuffer(bufferList);
-
-        stringBeanPool.recycle(buf);
-        charBuffer.clear();
-        charBeanPool.recycle(charBuffer);
+        btyesBeanPool.recycle(bytes);
     }
 
-    private void callbackRead(SocketChannel socketChannel, String msg) {
+    private String processRead(String input) {
+        System.out.println("Server received [" + input + "] ");
+
+        // ... do some process
+
+        return input + " done.";
+    }
+
+    private void callbackRead(SocketChannel socketChannel, ByteBuffer buf, String msg) {
+        buf.clear();
+        buf.put(msg.getBytes(StandardCharsets.UTF_8));
+        buf.flip();
         // echo back.
         try {
-            socketChannel.write(ByteBuffer.wrap(msg.getBytes(StandardCharsets.UTF_8)));
+            socketChannel.write(buf);
         } catch (IOException e) {
             // e.printStackTrace();
         }
@@ -237,19 +256,40 @@ public class TCPServer implements AutoCloseable {
         }
     }
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException {
         Scanner sc = new Scanner(System.in);
 
-        System.out.print("请输入ip：");
-        String in = sc.nextLine();
+        System.out.print("请输入端口：");
 
-        int port;
-        try {
-            port = Integer.valueOf(in);
-        } catch (NumberFormatException e) {
-            throw new IllegalArgumentException("port need a number");
+        int port = sc.nextInt();
+        if(port < 1000) {
+            throw new IllegalArgumentException("port must be bigger than 1000");
         }
 
-        new TCPServer(port).start(3000);
+        System.out.print("请输入缓冲池大小：");
+        String in = sc.next();
+        in = sc.nextLine();
+        int size;
+
+        if(StringUtil.isEmpty(in)) {
+            size = 5;
+        }
+        else {
+            try {
+                size = Integer.valueOf(in);
+            } catch (NumberFormatException e) {
+                throw new IllegalArgumentException("size need a number");
+            }
+            if (size < 1) {
+                throw new IllegalArgumentException("size must be a positive number");
+            }
+        }
+        TCPServer server = new TCPServer(port, size);
+        server.start(1000L);
+
+
+        while ((sc.nextLine()).equals("exit")) {
+            server.close();
+        }
     }
 }

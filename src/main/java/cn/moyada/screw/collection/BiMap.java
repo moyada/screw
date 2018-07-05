@@ -2,6 +2,7 @@ package cn.moyada.screw.collection;
 
 import sun.jvm.hotspot.runtime.ConstructionException;
 
+import java.io.Serializable;
 import java.util.Queue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -12,7 +13,8 @@ import java.util.function.BiConsumer;
  * @author xueyikang
  * @create 2018-03-02 14:26
  */
-public class BiMap<K, V> implements AbstractMap<K, V> {
+public class BiMap<K, V> implements AbstractMap<K, V>, Serializable {
+    private static final long serialVersionUID = -3468497654131487797L;
 
     private static final int DEFAULT_CAPACITY = 15;
 

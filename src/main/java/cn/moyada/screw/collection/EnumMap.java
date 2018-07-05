@@ -3,6 +3,7 @@ package cn.moyada.screw.collection;
 import sun.jvm.hotspot.runtime.ConstructionException;
 import sun.misc.Contended;
 
+import java.io.Serializable;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.function.BiConsumer;
 
@@ -10,7 +11,8 @@ import java.util.function.BiConsumer;
  * @author xueyikang
  * @create 2018-03-01 21:28
  */
-public class EnumMap<K extends Enum, V> implements AbstractMap<K, V>  {
+public class EnumMap<K extends Enum, V> implements AbstractMap<K, V>, Serializable {
+    private static final long serialVersionUID = -6399432773280418371L;
 
     private K[] keys;
     private Node<V>[] values;
