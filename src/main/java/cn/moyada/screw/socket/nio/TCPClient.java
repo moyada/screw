@@ -2,6 +2,7 @@ package cn.moyada.screw.socket.nio;
 
 import cn.moyada.screw.utils.StringUtil;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.net.ConnectException;
 import java.net.InetSocketAddress;
@@ -18,7 +19,7 @@ import java.util.concurrent.TimeUnit;
  * @author xueyikang
  * @create 2018-04-10 23:02
  */
-public class TCPClient implements AutoCloseable {
+public class TCPClient implements Closeable {
 
     private final ByteBuffer writeBuffer;
     private final ByteBuffer readBuffer;

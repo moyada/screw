@@ -4,19 +4,21 @@ import cn.moyada.screw.pool.BeanPool;
 import cn.moyada.screw.pool.BeanPoolFactory;
 import cn.moyada.screw.utils.StringUtil;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.*;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
-import java.util.concurrent.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * @author xueyikang
  * @create 2018-04-10 23:11
  */
-public class TCPServer implements AutoCloseable {
+public class TCPServer implements Closeable {
     private static int DEFAULT_BUF_SIZE = 1024;
 
     private final Selector selector;

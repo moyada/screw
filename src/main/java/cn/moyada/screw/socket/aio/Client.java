@@ -4,8 +4,8 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousSocketChannel;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
+import java.nio.channels.CompletionHandler;
+import java.nio.charset.StandardCharsets;
 
 /**
  * @author xueyikang
@@ -13,46 +13,103 @@ import java.util.concurrent.Future;
  */
 public class Client implements AutoCloseable {
 
-    private AsynchronousSocketChannel socketChannel;
+    private final AsynchronousSocketChannel socketChannel;
 
-    public Client(String host, int port) {
-        try {
-            socketChannel = AsynchronousSocketChannel.open();
-            socketChannel.connect(new InetSocketAddress(host, port));
+    private volatile boolean connected;
+
+    public Client(String host, int port) throws IOException {
+        final InetSocketAddress address = new InetSocketAddress(host, port);
+        socketChannel = AsynchronousSocketChannel.open();
+        connected = false;
+        socketChannel.connect(address, address, new ConnectCompleteHandler());
+    }
+
+    public boolean isConnected() {
+        return connected;
+    }
+
+    public void send(String message) {
+        byte[] byteMsg = message.getBytes(StandardCharsets.UTF_8);
+        ByteBuffer buffer = ByteBuffer.wrap(byteMsg);
+        socketChannel.write(buffer, null, new WriteCompleteHandler());
+    }
+
+    public void listenner() {
+        ByteBuffer buffer = ByteBuffer.allocate(1024);
+        socketChannel.read(buffer, null, new ReadCompleteHandler(buffer));
+    }
+
+    class ConnectCompleteHandler implements CompletionHandler<Void, InetSocketAddress> {
+
+        private int count = 0;
+
+        @Override
+        public void completed(Void result, InetSocketAddress address) {
+            connected = true;
+            System.out.println("connected success.");
         }
-        catch (IOException e) {
-            e.printStackTrace();
-            try {
-                close();
-            } catch (Exception e1) {
-                e1.printStackTrace();
+
+        @Override
+        public void failed(Throwable exc, InetSocketAddress address) {
+            if(count > 10) {
+                System.out.println("connected failed");
             }
+            count++;
+            socketChannel.connect(address, address, this);
         }
     }
 
-    public String sendMessage(String message) throws ExecutionException, InterruptedException {
-        byte[] byteMsg = message.getBytes();
-        ByteBuffer buffer = ByteBuffer.wrap(byteMsg);
-        Future<Integer> writeResult = socketChannel.write(buffer);
+    class WriteCompleteHandler implements CompletionHandler<Integer, Object> {
 
-        // do some computation
+        @Override
+        public void completed(Integer result, Object attachment) {
+            System.out.println("write completed.");
+        }
 
-        writeResult.get();
-        buffer.flip();
-        Future<Integer> readResult = socketChannel.read(buffer);
+        @Override
+        public void failed(Throwable exc, Object attachment) {
+            System.out.println("write failed.");
+        }
+    }
 
-        // do some computation
+    class ReadCompleteHandler implements CompletionHandler<Integer, Object> {
 
-        readResult.get();
-        String echo = new String(buffer.array()).trim();
-        buffer.clear();
-        return echo;
+        private final ByteBuffer buffer;
+
+        public ReadCompleteHandler(ByteBuffer buffer) {
+            this.buffer = buffer;
+        }
+
+        @Override
+        public void completed(Integer result, Object attachment) {
+            byte[] bytes = new byte[result];
+            buffer.get(bytes, 0, result);
+            buffer.clear();
+
+            System.out.println("read: " + new String(bytes, 0, result));
+        }
+
+        @Override
+        public void failed(Throwable exc, Object attachment) {
+            System.out.println("read failed.");
+        }
     }
 
     @Override
     public void close() throws Exception {
-        if(socketChannel!=null){
+        if(socketChannel != null && socketChannel.isOpen()){
             socketChannel.close();
         }
+    }
+
+    public static void main(String[] args) throws IOException, InterruptedException {
+        Client client = new Client("127.0.0.1", 5666);
+        while (!client.isConnected()) {
+            Thread.sleep(100);
+        }
+        client.send("hi");
+        client.send("88");
+
+        Thread.currentThread().join();
     }
 }
