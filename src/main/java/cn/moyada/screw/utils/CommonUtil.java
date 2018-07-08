@@ -5,6 +5,9 @@ import org.jboss.netty.handler.codec.serialization.SoftReferenceMap;
 import sun.misc.Unsafe;
 
 import java.lang.reflect.Field;
+import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.security.AccessController;
 import java.security.PrivilegedExceptionAction;
 import java.util.Map;
@@ -110,10 +113,21 @@ public class CommonUtil {
         return success;
     }
 
-    public static boolean compareAndSwapString(String oldString, String newString) {
-        char[] oldValue = StringUtil.getValue(oldString);
-        char[] newValue = StringUtil.getValue(newString);
-        return compareAndSwapParameter(oldString, "value", oldValue, newValue, String.class);
+    public static String getRealPath(String fileName) {
+        URL resource = CommonUtil.class.getResource("/" + fileName);
+        if(null != resource) {
+            return resource.getPath();
+        }
+
+        if(Files.exists(Paths.get(fileName))) {
+            return fileName;
+        }
+
+        resource = CommonUtil.class.getResource(fileName);
+        if(null != resource) {
+            return resource.getPath();
+        }
+        return null;
     }
 
     public static String getUUID() {
