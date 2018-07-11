@@ -2,7 +2,7 @@ package cn.moyada.screw.utils;
 
 import cn.moyada.screw.pool.BeanPool;
 import cn.moyada.screw.pool.BeanPoolFactory;
-import com.google.common.base.Stopwatch;
+import cn.moyada.screw.watch.Stopwatch;
 
 import java.util.concurrent.TimeUnit;
 
@@ -12,25 +12,16 @@ import java.util.concurrent.TimeUnit;
  */
 public class StopwatchUtil {
 
-    private static BeanPool<Stopwatch> executor = BeanPoolFactory.newConcurrentPool(20, Stopwatch::createUnstarted);
-
-    public static long startNano() {
-        return System.nanoTime();
-    }
-
-    public static long stopNano(long startNano) {
-        return (System.nanoTime() - startNano) / 1_000_000L;
-    }
+    private static BeanPool<Stopwatch> executor = BeanPoolFactory.newConcurrentPool(10, Stopwatch::createUnstarted);
 
     public static Stopwatch start() {
         Stopwatch stopwatch = executor.allocate();
-        stopwatch.start();
+        stopwatch.reset();
         return stopwatch;
     }
 
     public static long stop(Stopwatch stopwatch) {
         long elapsed = stopwatch.elapsed(TimeUnit.MILLISECONDS);
-        stopwatch.reset();
         executor.recycle(stopwatch);
         return elapsed;
     }
