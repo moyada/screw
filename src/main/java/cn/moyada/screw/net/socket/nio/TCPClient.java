@@ -1,5 +1,6 @@
-package cn.moyada.screw.socket.nio;
+package cn.moyada.screw.net.socket.nio;
 
+import cn.moyada.screw.utils.AssertUtil;
 import cn.moyada.screw.utils.StringUtil;
 
 import java.io.Closeable;
@@ -147,18 +148,14 @@ public class TCPClient implements Closeable {
             host = "127.0.0.1";
         }
         else {
-            if (!checkHost(in)) {
-                throw new IllegalArgumentException("host error");
-            }
+            AssertUtil.checkHost(in);
             host = in;
         }
 
         System.out.print("请输入端口：");
 
         int port = sc.nextInt();
-        if(port < 1000) {
-            throw new IllegalArgumentException("port must be bigger than 1000");
-        }
+        AssertUtil.checkPort(port);
 
         TCPClient client = new TCPClient(host, port);
 
@@ -178,21 +175,5 @@ public class TCPClient implements Closeable {
         TimeUnit.SECONDS.sleep(1L);
         client.close();
         Runtime.getRuntime().exit(1);
-    }
-
-    private static boolean checkHost(String host) {
-        String[] split = host.split("\\.");
-        if(split.length != 4) {
-            return false;
-        }
-
-        for (String s : split) {
-            try {
-                Integer.valueOf(s);
-            } catch (NumberFormatException e) {
-                return false;
-            }
-        }
-        return true;
     }
 }

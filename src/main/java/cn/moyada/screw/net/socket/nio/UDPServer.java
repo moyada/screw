@@ -1,4 +1,4 @@
-package cn.moyada.screw.socket.nio;
+package cn.moyada.screw.net.socket.nio;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -103,6 +103,6 @@ public class UDPServer implements Closeable {
     }
 
     public static void main(String[] args) throws IOException {
-        new cn.moyada.screw.socket.bio.UDPServer(5555).start();
+        new cn.moyada.screw.net.socket.bio.UDPServer(5555).start();
     }
 }

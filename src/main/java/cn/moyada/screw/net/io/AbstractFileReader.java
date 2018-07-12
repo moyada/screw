@@ -1,4 +1,4 @@
-package cn.moyada.screw.io;
+package cn.moyada.screw.net.io;
 
 /**
  * @author xueyikang

@@ -1,4 +1,4 @@
-package cn.moyada.screw.socket.nio;
+package cn.moyada.screw.net.socket.nio;
 
 import java.io.Closeable;
 import java.io.IOException;

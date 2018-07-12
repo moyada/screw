@@ -1,4 +1,4 @@
-package cn.moyada.screw.socket;
+package cn.moyada.screw.net.socket;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;

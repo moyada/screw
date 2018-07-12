@@ -1,4 +1,4 @@
-package cn.moyada.screw.socket.aio;
+package cn.moyada.screw.net.socket.aio;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;

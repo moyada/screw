@@ -1,7 +1,8 @@
-package cn.moyada.screw.socket.nio;
+package cn.moyada.screw.net.socket.nio;
 
 import cn.moyada.screw.pool.BeanPool;
 import cn.moyada.screw.pool.BeanPoolFactory;
+import cn.moyada.screw.utils.AssertUtil;
 import cn.moyada.screw.utils.StringUtil;
 
 import java.io.Closeable;
@@ -264,9 +265,7 @@ public class TCPServer implements Closeable {
         System.out.print("请输入端口：");
 
         int port = sc.nextInt();
-        if(port < 1000) {
-            throw new IllegalArgumentException("port must be bigger than 1000");
-        }
+        AssertUtil.checkPort(port);
 
         System.out.print("请输入缓冲池大小：");
         String in = sc.next();
