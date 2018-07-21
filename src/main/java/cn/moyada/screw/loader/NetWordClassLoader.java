@@ -1,7 +1,6 @@
 package cn.moyada.screw.loader;
 
 import cn.moyada.screw.enums.ProtocolType;
-import sun.misc.Launcher;
 
 import java.io.*;
 import java.net.MalformedURLException;
@@ -18,23 +17,21 @@ import java.util.ResourceBundle;
  */
 public class NetWordClassLoader extends URLClassLoader {
 
-    private final byte[] BUFF = new byte[1024];
-
     private NetWordClassLoader(URL[] urls, ClassLoader parentLoader) {
         super(urls, parentLoader);
     }
 
     public static NetWordClassLoader newInstance() {
-        return newInstance(Launcher.getLauncher().getClassLoader());
+        return newInstance(ClassLoader.getSystemClassLoader());
     }
 
     public static NetWordClassLoader newInstance(ClassLoader parentLoader) {
-        parentLoader = null == parentLoader ? Launcher.getLauncher().getClassLoader() : parentLoader;
+        parentLoader = null == parentLoader ? ClassLoader.getSystemClassLoader() : parentLoader;
         return newInstance(Collections.emptyList(), parentLoader);
     }
 
     public static NetWordClassLoader newInstance(String url) {
-        return newInstance(url, Launcher.getLauncher().getClassLoader());
+        return newInstance(url, ClassLoader.getSystemClassLoader());
     }
 
     public static NetWordClassLoader newInstance(String url, ClassLoader parentLoader) {
@@ -42,7 +39,7 @@ public class NetWordClassLoader extends URLClassLoader {
     }
 
     public static NetWordClassLoader newInstance(List<String> urls) {
-        return newInstance(urls, Launcher.getLauncher().getClassLoader());
+        return newInstance(urls, ClassLoader.getSystemClassLoader());
     }
 
     public static NetWordClassLoader newInstance(List<String> urlList, ClassLoader parentLoader) {
@@ -163,16 +160,17 @@ public class NetWordClassLoader extends URLClassLoader {
     }
 
     private byte[] loadClassData(InputStream is) {
+        byte[] buff = new byte[1024];
         try {
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            ByteArrayOutputStream os = new ByteArrayOutputStream();
             int len;
-            while((len = is.read(BUFF)) != -1) {
-                baos.write(BUFF,0,len);
+            while((len = is.read(buff)) != -1) {
+                os.write(buff,0,len);
             }
-            byte[] bytes = baos.toByteArray();
-            baos.close();
+            buff = os.toByteArray();
+            os.close();
 
-            return bytes;
+            return buff;
         } catch (Exception e) {
             e.printStackTrace();
         } finally {

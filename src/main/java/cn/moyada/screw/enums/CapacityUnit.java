@@ -35,19 +35,19 @@ public enum CapacityUnit {
         return calculate(convert(size, unit));
     }
 
-    private long convert(double size, CapacityUnit unit) {
-        return (long) (unit.size * size);
-    }
-
-    private long convert(long size, CapacityUnit unit) {
+    private double convert(double size, CapacityUnit unit) {
         return unit.size * size;
     }
 
-    protected double calculate(long size) {
-        return size * 1D / this.size;
+    private double convert(long size, CapacityUnit unit) {
+        return unit.size * size;
+    }
+
+    protected double calculate(double size) {
+        return size / this.size;
     }
 
     public static void main(String[] args) {
-        System.out.println(CapacityUnit.GB.calculate(1030*240*24, CapacityUnit.KB));
+        System.out.println(CapacityUnit.MB.calculate(3.879D, CapacityUnit.GB));
     }
 }
