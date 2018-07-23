@@ -18,6 +18,14 @@ public class CollectionUtil {
         return !isEmpty(list);
     }
 
+    public static boolean isEmpty(Map list) {
+        return null == list || list.size() == 0;
+    }
+
+    public static boolean isNotEmpty(Map list) {
+        return !isEmpty(list);
+    }
+
     public static <T> Collection<T> combine(Collection<T> set1, Collection<T> set2) {
         boolean set1empty = null == set1 || set1.size() == 0;
         boolean set2empty = null == set2 || set2.size() == 0;

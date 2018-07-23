@@ -7,7 +7,6 @@ import javax.xml.bind.DatatypeConverter;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -38,8 +37,27 @@ public class DigestUtil {
         MD5_DIGEST.recycle(messageDigest);
     }
 
-    private static String byteToHex(byte[] bytes) {
+    private static String byteToUpperHex(byte[] bytes) {
         return DatatypeConverter.printHexBinary(bytes).toUpperCase();
+    }
+
+    public static byte[] getMD5bytes(byte[] input, byte[]... salts) {
+        MessageDigest messageDigest = getMd5Digest();
+        messageDigest.update(input);
+        for (byte[] salt : salts) {
+            messageDigest.update(salt);
+        }
+
+        byte[] digest = messageDigest.digest();
+        resetMd5Digest (messageDigest);
+        return digest;
+    }
+
+    public static String getMD5(byte[] input) {
+        MessageDigest messageDigest = getMd5Digest();
+        byte[] digest = messageDigest.digest(input);
+        resetMd5Digest(messageDigest);
+        return byteToUpperHex(digest);
     }
 
     public static String fileToMD5(String filePath) throws IOException {
@@ -58,18 +76,11 @@ public class DigestUtil {
 
         byte[] digest = messageDigest.digest();
         resetMd5Digest(messageDigest);
-        return byteToHex(digest);
-    }
-
-    public static String getMD5(String input) {
-        MessageDigest messageDigest = getMd5Digest();
-        byte[] digest = messageDigest.digest(input.getBytes(StandardCharsets.UTF_8));
-        resetMd5Digest(messageDigest);
-        return byteToHex(digest);
+        return byteToUpperHex(digest);
     }
 
     public static void main(String[] args) throws IOException {
         System.out.println(fileToMD5("/Users/xueyikang/JavaProjects/screw/src/main/resources/redis.yaml"));
-        System.out.println(getMD5("dsad4354354354354355as"));
+        System.out.println(getMD5("dsad4354354354354355as".getBytes()));
     }
 }
