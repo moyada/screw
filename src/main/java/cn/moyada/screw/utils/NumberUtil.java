@@ -14,17 +14,15 @@ public class NumberUtil {
 
         byte[] bytes = new byte[length--];
 
-//        int remainder;
-        for (int remainder = value % 10; (value /= 10) > 0; remainder = value % 10) {
-//            remainder = value % 10;
+        for (int remainder = value % 10; ; remainder = value % 10) {
             bytes[length--] = NUMBER_ASCII[remainder];
             if(length == -1) {
                 return new String(bytes);
             }
 
-//            if((value /= 10) == 0) {
-//                break;
-//            }
+            if((value /= 10) == 0) {
+                break;
+            }
         }
 
         for (; length > -1; length--) {
@@ -32,5 +30,19 @@ public class NumberUtil {
         }
 
         return new String(bytes);
+    }
+
+    public static int getMax2PowerMinus1(int source) {
+        for (int bit = Integer.MAX_VALUE, next; ; bit = next) {
+            if(source == bit) {
+                break;
+            }
+            next = bit >> 1;
+            if(source > next) {
+                source = bit;
+                break;
+            }
+        }
+        return source;
     }
 }
