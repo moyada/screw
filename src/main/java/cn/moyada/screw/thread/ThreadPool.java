@@ -14,6 +14,10 @@ public class ThreadPool {
         pool.execute(command);
     }
 
+    public <V> Future<V> addTask(Callable<V> caller) {
+        return pool.submit(caller);
+    }
+
     public void addTaskTimeout(Runnable command, long milli) {
         Future<?> done = pool.submit(command);
 
@@ -24,6 +28,8 @@ public class ThreadPool {
                 Thread.currentThread().interrupt();
                 continue;
             } catch (ExecutionException | TimeoutException e) {
+                // pass
+            } finally {
                 done.cancel(true);
             }
             break;

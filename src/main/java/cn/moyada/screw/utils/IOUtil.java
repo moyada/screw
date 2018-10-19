@@ -37,11 +37,11 @@ public class IOUtil {
         return sb.toString();
     }
 
-    public static <K, V> Map<K, V> read2Map(String fileName, FileOpt<Stream<String>, Map<K, V>, IOException> block) throws IOException {
-        return read2Map(fileName, block, StandardCharsets.UTF_8);
+    public static <K, V> Map<K, V> readToMap(String fileName, FileOpt<Stream<String>, Map<K, V>, IOException> block) throws IOException {
+        return readToMap(fileName, block, StandardCharsets.UTF_8);
     }
 
-    public static <K, V> Map<K, V>  read2Map(String fileName, FileOpt<Stream<String>, Map<K, V>, IOException> block, Charset charSet) throws IOException {
+    public static <K, V> Map<K, V>  readToMap(String fileName, FileOpt<Stream<String>, Map<K, V>, IOException> block, Charset charSet) throws IOException {
         Map<K, V> result;
         try (BufferedReader reader = Files.newBufferedReader(Paths.get(fileName), charSet)){
             result = block.apply(reader.lines());
@@ -49,11 +49,11 @@ public class IOUtil {
         return result;
     }
 
-    public static <T> List<T> read2List(String fileName, FileOpt<Stream<String>, List<T>, IOException> block) throws IOException {
-        return read2List(fileName, block, StandardCharsets.UTF_8);
+    public static <T> List<T> readToList(String fileName, FileOpt<Stream<String>, List<T>, IOException> block) throws IOException {
+        return readToList(fileName, block, StandardCharsets.UTF_8);
     }
 
-    public static <T> List<T> read2List(String fileName, FileOpt<Stream<String>, List<T>, IOException> block, Charset charSet) throws IOException {
+    public static <T> List<T> readToList(String fileName, FileOpt<Stream<String>, List<T>, IOException> block, Charset charSet) throws IOException {
         List<T> result;
         try (BufferedReader reader = Files.newBufferedReader(Paths.get(fileName), charSet)){
             result = block.apply(reader.lines());
@@ -61,11 +61,11 @@ public class IOUtil {
         return result;
     }
 
-    public static <T> T read2Objejt(String fileName, FileOpt<Stream<String>, T, IOException> block) throws IOException {
-        return read2Objejt(fileName, block, StandardCharsets.UTF_8);
+    public static <T> T readToObject(String fileName, FileOpt<Stream<String>, T, IOException> block) throws IOException {
+        return readToObject(fileName, block, StandardCharsets.UTF_8);
     }
 
-    public static <T> T read2Objejt(String fileName, FileOpt<Stream<String>, T, IOException> block, Charset charSet) throws IOException {
+    public static <T> T readToObject(String fileName, FileOpt<Stream<String>, T, IOException> block, Charset charSet) throws IOException {
         T result;
         try (BufferedReader reader = Files.newBufferedReader(Paths.get(fileName), charSet)){
             result = block.apply(reader.lines());
@@ -74,13 +74,13 @@ public class IOUtil {
     }
 
     @FunctionalInterface
-    public interface FileOpt<T, R, X extends Throwable> {
-        R apply(T instance) throws X;
+    public interface FileOpt<T extends Stream, R, X extends Throwable> {
+        R apply(T stream) throws X;
     }
 
     public static void main(String[] args) throws IOException {
         String realPath = CommonUtil.getRealPath("redis.yaml");
-        int strings = read2Objejt(realPath, stream ->
+        int strings = readToObject(realPath, stream ->
                 stream.mapToInt(String::length).sum());
         System.out.println(strings);
     }

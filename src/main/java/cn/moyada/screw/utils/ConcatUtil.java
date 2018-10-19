@@ -1,7 +1,7 @@
 package cn.moyada.screw.utils;
 
-import cn.moyada.screw.pool.BeanPool;
-import cn.moyada.screw.pool.BeanPoolFactory;
+import cn.moyada.screw.pool.ObjectPool;
+import cn.moyada.screw.pool.ObjectPoolFactory;
 import joptsimple.internal.Strings;
 
 import java.util.Collection;
@@ -14,7 +14,7 @@ import java.util.Map;
  */
 public class ConcatUtil {
 
-    private static BeanPool<StringBuilder> sbPool = BeanPoolFactory.newPool(32, () -> new StringBuilder(64));
+    private static ObjectPool<StringBuilder> sbPool = ObjectPoolFactory.newPool(32, () -> new StringBuilder(64));
     
     private static final String NULL = "_";
 

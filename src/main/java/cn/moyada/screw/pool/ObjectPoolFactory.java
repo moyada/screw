@@ -8,44 +8,44 @@ import java.util.function.Supplier;
  * @author xueyikang
  * @create 2018-05-29 19:21
  */
-public abstract class BeanPoolFactory {
+public abstract class ObjectPoolFactory {
 
     protected final static int DEFAULT_SIZE = 1024;
 
-    public static <T> BeanPool<T> newPool(Supplier<T> defaultBeanFactory) {
-        return newPool(DEFAULT_SIZE, defaultBeanFactory);
+    public static <T> ObjectPool<T> newPool(Supplier<T> defaultObjectSupplier) {
+        return newPool(DEFAULT_SIZE, defaultObjectSupplier);
     }
 
-    public static <T> BeanPool<T> newPool(int size, Supplier<T> defaultBeanFactory) {
-        return newPool(size, defaultBeanFactory, false);
+    public static <T> ObjectPool<T> newPool(int size, Supplier<T> defaultObjectSupplier) {
+        return newPool(size, defaultObjectSupplier, false);
     }
 
-    public static <T> BeanPool<T> newConcurrentPool(Supplier<T> defaultBeanFactory) {
-        return newConcurrentPool(DEFAULT_SIZE, defaultBeanFactory);
+    public static <T> ObjectPool<T> newConcurrentPool(Supplier<T> defaultObjectSupplier) {
+        return newConcurrentPool(DEFAULT_SIZE, defaultObjectSupplier);
     }
 
-    public static <T> BeanPool<T> newConcurrentPool(int size, Supplier<T> defaultBeanFactory) {
-        return newPool(size, defaultBeanFactory, true);
+    public static <T> ObjectPool<T> newConcurrentPool(int size, Supplier<T> defaultObjectSupplier) {
+        return newPool(size, defaultObjectSupplier, true);
     }
 
-    private static <T> BeanPool<T> newPool(int size, Supplier<T> defaultBeanFactory, boolean synchronize) {
+    private static <T> ObjectPool<T> newPool(int size, Supplier<T> defaultObjectSupplier, boolean synchronize) {
         if(size <= 0) {
             throw new IllegalArgumentException("size can not be positive.");
         }
-        if(null == defaultBeanFactory) {
+        if(null == defaultObjectSupplier) {
             throw new IllegalArgumentException("defaultBeanFactory can not be null.");
         }
 
         if(synchronize) {
-            return new ConcurrentBeanPool<>(size, defaultBeanFactory);
+            return new ConcurrentObjectPool<>(size, defaultObjectSupplier);
         }
-        return new SingleBeanPool<>(size, defaultBeanFactory);
+        return new SingleObjectPool<>(size, defaultObjectSupplier);
     }
 
     public static void main(String[] args) throws InterruptedException {
         String defaultBean = "666";
         String finalDefaultBean = defaultBean;
-        BeanPool<String> executor = BeanPoolFactory.newConcurrentPool(20, () -> finalDefaultBean);
+        ObjectPool<String> executor = ObjectPoolFactory.newConcurrentPool(20, () -> finalDefaultBean);
         ExecutorService pool = Executors.newFixedThreadPool(4);
         defaultBean = null;
 

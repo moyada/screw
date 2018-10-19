@@ -34,7 +34,6 @@ public class CommonUtil {
                 return (Unsafe) theUnsafe.get(null);
             };
             THE_UNSAFE = AccessController.doPrivileged(action);
-
         }
         catch (Exception e)
         {
@@ -48,8 +47,7 @@ public class CommonUtil {
      *
      * @return The Unsafe
      */
-    public static Unsafe getUnsafe()
-    {
+    public static Unsafe getUnsafe() {
         return THE_UNSAFE;
     }
 

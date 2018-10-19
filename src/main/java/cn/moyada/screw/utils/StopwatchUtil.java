@@ -1,7 +1,7 @@
 package cn.moyada.screw.utils;
 
-import cn.moyada.screw.pool.BeanPool;
-import cn.moyada.screw.pool.BeanPoolFactory;
+import cn.moyada.screw.pool.ObjectPool;
+import cn.moyada.screw.pool.ObjectPoolFactory;
 import cn.moyada.screw.watch.Stopwatch;
 
 import java.util.concurrent.TimeUnit;
@@ -12,7 +12,7 @@ import java.util.concurrent.TimeUnit;
  */
 public class StopwatchUtil {
 
-    private static BeanPool<Stopwatch> executor = BeanPoolFactory.newConcurrentPool(10, Stopwatch::createUnstarted);
+    private static ObjectPool<Stopwatch> executor = ObjectPoolFactory.newConcurrentPool(10, Stopwatch::createUnstarted);
 
     public static Stopwatch start() {
         Stopwatch stopwatch = executor.allocate();

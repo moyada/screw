@@ -1,7 +1,6 @@
 package cn.moyada.screw.collection;
 
-import sun.jvm.hotspot.runtime.ConstructionException;
-import sun.misc.Contended;
+import cn.moyada.screw.exception.ConstructionException;
 
 import java.io.Serializable;
 import java.util.concurrent.atomic.LongAdder;
@@ -95,7 +94,7 @@ public class EnumMap<K extends Enum, V> implements AbstractMap<K, V>, Serializab
         return key.ordinal();
     }
 
-    @Contended
+//    @Contended
     protected final class Node<T> extends Padding {
 
         private final T value;

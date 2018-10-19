@@ -1,7 +1,7 @@
 package cn.moyada.screw.net.socket.nio;
 
-import cn.moyada.screw.pool.BeanPool;
-import cn.moyada.screw.pool.BeanPoolFactory;
+import cn.moyada.screw.pool.ObjectPool;
+import cn.moyada.screw.pool.ObjectPoolFactory;
 import cn.moyada.screw.utils.AssertUtil;
 import cn.moyada.screw.utils.StringUtil;
 
@@ -26,8 +26,8 @@ public class TCPServer implements Closeable {
     private final ServerSocketChannel socketChannel;
 
     private final ExecutorService threadPool;
-    private final BeanPool<ByteBuffer> bufferBeanPool;
-    private final BeanPool<byte[]> btyesBeanPool;
+    private final ObjectPool<ByteBuffer> bufferObjectPool;
+    private final ObjectPool<byte[]> btyesObjectPool;
 
 //    private final CharsetDecoder decoder = StandardCharsets.UTF_8.newDecoder();
 
@@ -56,8 +56,8 @@ public class TCPServer implements Closeable {
 //                1L, TimeUnit.MINUTES,
 //                new LinkedBlockingQueue<>());
 
-        this.bufferBeanPool = BeanPoolFactory.newConcurrentPool(size, () -> ByteBuffer.allocateDirect(DEFAULT_BUF_SIZE));
-        this.btyesBeanPool = BeanPoolFactory.newConcurrentPool(size, () -> new byte[DEFAULT_BUF_SIZE]);
+        this.bufferObjectPool = ObjectPoolFactory.newConcurrentPool(size, () -> ByteBuffer.allocateDirect(DEFAULT_BUF_SIZE));
+        this.btyesObjectPool = ObjectPoolFactory.newConcurrentPool(size, () -> new byte[DEFAULT_BUF_SIZE]);
     }
 
     @SuppressWarnings("InfiniteLoopStatement")
@@ -140,7 +140,7 @@ public class TCPServer implements Closeable {
                 key.interestOps(SelectionKey.OP_ACCEPT);
             }
 
-            input = bufferBeanPool.allocate();
+            input = bufferObjectPool.allocate();
             try {
                 bytesRead = socketChannel.read(input);
                 if (bytesRead == -1) {
@@ -168,7 +168,7 @@ public class TCPServer implements Closeable {
     }
 
     private void handleSocket(SocketChannel socketChannel, List<ByteBuffer> bufferList) {
-        byte[] bytes = btyesBeanPool.allocate();
+        byte[] bytes = btyesObjectPool.allocate();
 
         int bytesRead, start;
         String msg;
@@ -181,7 +181,7 @@ public class TCPServer implements Closeable {
             // if array can not be contain
 //            if(bytes.length < bytesRead) {
 //                int finalBytesRead = bytesRead;
-//                bytes = btyesBeanPool.allocate(() -> new byte[finalBytesRead]);
+//                bytes = btyesObjectPool.allocate(() -> new byte[finalBytesRead]);
 //            }
             input.get(bytes, 0, bytesRead);
 
@@ -198,7 +198,7 @@ public class TCPServer implements Closeable {
             }
         }
         clearByteBuffer(bufferList);
-        btyesBeanPool.recycle(bytes);
+        btyesObjectPool.recycle(bytes);
     }
 
     private String processRead(String input) {
@@ -245,7 +245,7 @@ public class TCPServer implements Closeable {
         }
         bufferList.forEach(buffer -> {
             buffer.clear();
-            bufferBeanPool.recycle(buffer);
+            bufferObjectPool.recycle(buffer);
         });
     }
 

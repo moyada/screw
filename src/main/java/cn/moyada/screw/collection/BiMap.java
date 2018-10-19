@@ -1,6 +1,7 @@
 package cn.moyada.screw.collection;
 
-import sun.jvm.hotspot.runtime.ConstructionException;
+
+import cn.moyada.screw.exception.ConstructionException;
 
 import java.io.Serializable;
 import java.util.Queue;

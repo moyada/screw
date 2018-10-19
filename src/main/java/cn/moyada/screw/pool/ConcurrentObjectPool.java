@@ -9,7 +9,7 @@ import java.util.function.Supplier;
  * @author xueyikang
  * @create 2018-05-29 19:49
  */
-public class ConcurrentBeanPool<T> extends AbstractBeanPool<T> {
+public class ConcurrentObjectPool<T> extends AbstractObjectPool<T> {
 
     protected final AtomicInteger size;
 
@@ -23,8 +23,8 @@ public class ConcurrentBeanPool<T> extends AbstractBeanPool<T> {
      */
     protected final AtomicReference<Item> last;
 
-    ConcurrentBeanPool(int size, Supplier<T> defaultBean) {
-        super(size, defaultBean);
+    ConcurrentObjectPool(int size, Supplier<T> defaultSupplier) {
+        super(size, defaultSupplier);
         this.first = new AtomicReference<>(null);
         this.last = new AtomicReference<>(null);
         this.size = new AtomicInteger(0);
@@ -32,13 +32,13 @@ public class ConcurrentBeanPool<T> extends AbstractBeanPool<T> {
 
     @Override
     public T allocate() {
-        return allocate(defaultBean);
+        return allocate(defaultSupplier);
     }
 
     @Override
-    public T allocate(Supplier<T> initBean) {
+    public T allocate(Supplier<T> supplier) {
         if(isEmpty()) {
-            return initBean.get();
+            return initObject(supplier);
         }
 
         Item item, next;
@@ -47,7 +47,7 @@ public class ConcurrentBeanPool<T> extends AbstractBeanPool<T> {
         do {
             item = first.get();
             if(null == item) {
-                return initBean.get();
+                return initObject(supplier);
             }
             next = item.next;
         }
@@ -75,12 +75,12 @@ public class ConcurrentBeanPool<T> extends AbstractBeanPool<T> {
     }
 
     @Override
-    public void recycle(T bean) {
+    public void recycle(T obj) {
+        clear(obj);
         if(size.intValue() >= maxCapacity) {
             return;
         }
-
-        final Item next = new Item(bean); // 创建新资源
+        final Item next = new Item(obj); // 创建新资源
         Item item = last.get(); // 获取尾指针指向资源
 
         if(null == item) {

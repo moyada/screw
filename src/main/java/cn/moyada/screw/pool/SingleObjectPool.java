@@ -7,7 +7,7 @@ import java.util.function.Supplier;
  * @author xueyikang
  * @create 2018-05-29 19:21
  */
-public class SingleBeanPool<T> extends AbstractBeanPool<T> {
+public class SingleObjectPool<T> extends AbstractObjectPool<T> {
 
     protected int size;
 
@@ -21,8 +21,8 @@ public class SingleBeanPool<T> extends AbstractBeanPool<T> {
      */
     protected Item last;
 
-    SingleBeanPool(int size, Supplier<T> defaultBean) {
-        super(size, defaultBean);
+    SingleObjectPool(int size, Supplier<T> defaultSupplier) {
+        super(size, defaultSupplier);
         this.first = null;
         this.last = null;
         this.size = 0;
@@ -35,13 +35,13 @@ public class SingleBeanPool<T> extends AbstractBeanPool<T> {
 
     @Override
     public T allocate() {
-        return allocate(defaultBean);
+        return allocate(defaultSupplier);
     }
 
     @Override
-    public T allocate(Supplier<T> initBean) {
+    public T allocate(Supplier<T> supplier) {
         if(isEmpty()) {
-            return initBean.get();
+            return initObject(supplier);
         }
 
         if(null == first) {
@@ -58,16 +58,16 @@ public class SingleBeanPool<T> extends AbstractBeanPool<T> {
     }
 
     @Override
-    public void recycle(T bean) {
+    public void recycle(T obj) {
+        clear(obj);
         if(null == last) {
-            init(bean);
+            init(obj);
             return;
         }
         if(size >= maxCapacity) {
             return;
         }
-
-        final Item item = new Item(bean);
+        final Item item = new Item(obj);
         last.next = item;
         last = item;
         size++;

@@ -1,7 +1,6 @@
 package cn.moyada.screw.tools;
 
 import cn.moyada.screw.model.OrderDO;
-import com.sun.javafx.binding.StringFormatter;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Type;
@@ -179,10 +178,10 @@ public class SQLBuilder {
                 String property = field.getName();
                 String column = convert(field.getName());
                 if("id".equals(property)) {
-                    System.out.println(StringFormatter.format(idFormat, column, property).getValue());
+                    System.out.println(String.format(idFormat, column, property));
                 }
                 else {
-                    System.out.println(StringFormatter.format(columnFormat, column, property).getValue());
+                    System.out.println(String.format(columnFormat, column, property));
                 }
             }
         }

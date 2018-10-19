@@ -1,0 +1,39 @@
+/**
+ *
+ */
+module cn.moyada.screw {
+
+    exports cn.moyada.screw.utils;
+
+    requires java.base;
+    requires jdk.incubator.httpclient;
+    requires javassist;
+    requires curator.framework;
+    requires curator.recipes;
+    requires curator.client;
+    requires com.google.common;
+    requires jol.core;
+    requires jedis;
+    requires java.sql;
+//    requires protostuff.api;
+//    requires protostuff.core;
+//    requires protostuff.runtime;
+    requires gson;
+//    requires slf4j.api;
+    requires com.fasterxml.jackson.databind;
+    requires com.fasterxml.jackson.core;
+    requires java.xml.bind;
+    requires netty;
+    requires jdk.unsupported;
+    requires mail;
+    requires httpcore;
+    requires httpclient;
+    requires java.management;
+    requires cglib;
+    requires snakeyaml;
+    requires jdk.attach;
+    requires java.desktop;
+    requires jopt.simple;
+    requires slf4j.api;
+
+}

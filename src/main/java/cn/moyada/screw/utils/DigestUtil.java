@@ -1,9 +1,8 @@
 package cn.moyada.screw.utils;
 
-import cn.moyada.screw.pool.BeanPool;
-import cn.moyada.screw.pool.BeanPoolFactory;
+import cn.moyada.screw.pool.ObjectPool;
+import cn.moyada.screw.pool.ObjectPoolFactory;
 
-import javax.xml.bind.DatatypeConverter;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
@@ -15,10 +14,12 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.EnumSet;
 
+//import javax.xml.bind.DatatypeConverter;
+
 public class DigestUtil {
 
-    private static BeanPool<MessageDigest> MD5_DIGEST =
-            BeanPoolFactory.newConcurrentPool(1, DigestUtil::newMD5Instance);
+    private static ObjectPool<MessageDigest> MD5_DIGEST =
+            ObjectPoolFactory.newConcurrentPool(1, DigestUtil::newMD5Instance);
 
     private static MessageDigest newMD5Instance() {
         try {
@@ -38,7 +39,17 @@ public class DigestUtil {
     }
 
     private static String byteToUpperHex(byte[] bytes) {
-        return DatatypeConverter.printHexBinary(bytes).toUpperCase();
+        int length = bytes.length;
+        StringBuilder str = new StringBuilder(length * 2);
+        String item;
+        for (int index = 0; index < length; index++) {
+            item = Integer.toHexString(bytes[index] & 0XFF);
+            if (item.length() == 1) {
+                str.append("0");
+            }
+            str.append(item);
+        }
+        return str.toString().toUpperCase();
     }
 
     public static byte[] getMD5bytes(byte[] input, byte[]... salts) {

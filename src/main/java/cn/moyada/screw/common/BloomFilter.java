@@ -4,14 +4,24 @@ import cn.moyada.screw.utils.NumberUtil;
 
 public class BloomFilter<T> {
 
+    private static final int DEFAULT_SIZE = Integer.MAX_VALUE >> 1;
+
     private final HashStrategy[] strategies;
 
     private final int size;
 
     private final boolean[] market;
 
+    public BloomFilter() {
+        this(DEFAULT_SIZE);
+    }
+
+    public BloomFilter(int size) {
+        this(size, HashStrategy.getHashStrategy(), HashStrategy.getHigherXorHashStrategy(), HashStrategy.getLowerXorHashStrategy());
+    }
+
     public BloomFilter(HashStrategy... strategies) {
-        this(Integer.MAX_VALUE >> 1, strategies);
+        this(DEFAULT_SIZE, strategies);
     }
 
     public BloomFilter(int size, HashStrategy... strategies) {
@@ -19,7 +29,7 @@ public class BloomFilter<T> {
             throw new IllegalStateException("size must be greater than 2047.");
         }
         if (strategies.length < 2) {
-            throw new IllegalStateException("strategy number must be greater than 2.");
+            throw new IllegalArgumentException("strategy number must be greater than 2.");
         }
 
         size = NumberUtil.getMax2PowerMinus1(size);
@@ -56,11 +66,7 @@ public class BloomFilter<T> {
     }
 
     public static void main(String[] args) {
-        BloomFilter<String> bloomFilter = new BloomFilter<>(
-                HashStrategy.getHashStrategy(),
-                HashStrategy.getHigherXorHashStrategy(),
-                HashStrategy.getLowerXorHashStrategy()
-        );
+        BloomFilter<String> bloomFilter = new BloomFilter<>();
         bloomFilter.add("abcdefgh");
         bloomFilter.add("1234567");
         bloomFilter.add("ZXCASDQWE");

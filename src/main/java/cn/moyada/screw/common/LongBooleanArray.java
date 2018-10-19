@@ -1,10 +1,10 @@
 package cn.moyada.screw.common;
 
 import cn.moyada.screw.utils.CommonUtil;
-import sun.misc.Cleaner;
 import sun.misc.Unsafe;
 
 import java.io.Serializable;
+import java.lang.ref.Cleaner;
 
 public class LongBooleanArray implements Serializable, AutoCloseable {
 
@@ -19,13 +19,14 @@ public class LongBooleanArray implements Serializable, AutoCloseable {
 
     private final long size;
 
-    private final Cleaner cleaner;
+    private final Cleaner.Cleanable cleaner;
 
     public LongBooleanArray(long size) {
         this.UNSAFE = CommonUtil.getUnsafe();
         this.address = UNSAFE.allocateMemory(size);
         this.size = size;
-        this.cleaner = Cleaner.create(this, () -> this.UNSAFE.freeMemory(address));
+
+        this.cleaner = Cleaner.create().register(this, () -> this.UNSAFE.freeMemory(address));
     }
 
     public boolean get(long index) {
@@ -47,7 +48,6 @@ public class LongBooleanArray implements Serializable, AutoCloseable {
     @Override
     public void close() {
         this.cleaner.clean();
-        this.cleaner.clear();
     }
 
     public static void main(String[] args) {

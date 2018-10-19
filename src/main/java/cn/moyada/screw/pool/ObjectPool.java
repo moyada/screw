@@ -7,7 +7,7 @@ import java.util.function.Supplier;
  * @author xueyikang
  * @create 2018-05-29 19:53
  */
-public interface BeanPool<T> {
+public interface ObjectPool<T> {
 
     /**
      * 获取资源，资源不存在则使用默认方式创建
@@ -24,7 +24,7 @@ public interface BeanPool<T> {
 
     /**
      * 回收资源
-     * @param bean
+     * @param obj
      */
-    void recycle(T bean);
+    void recycle(T obj);
 }

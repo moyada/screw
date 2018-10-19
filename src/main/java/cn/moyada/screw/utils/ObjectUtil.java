@@ -2,85 +2,24 @@ package cn.moyada.screw.utils;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import jdk.nashorn.internal.ir.debug.ObjectSizeCalculator;
-import net.sf.cglib.beans.BeanCopier;
 
-import java.lang.reflect.Array;
+import java.lang.instrument.Instrumentation;
 import java.lang.reflect.Field;
 import java.lang.reflect.Type;
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 
 /**
  * Created by xueyikang on 2017/2/17.
  */
-@SuppressWarnings("unchecked")
 public class ObjectUtil {
 
-    private static Map<Class, BeanCopier> copyMap = new HashMap<>();
+    private static Instrumentation instrumentation;
 
-    public static long getSize(Object objs) {
-        return ObjectSizeCalculator.getObjectSize(objs);
-    }
-
-    /**
-     * 复制list集合到指定对象list，对同名称同类型属性进行复制
-     *
-     * @param sourceList 源list
-     * @param targetList 目标Class类
-     * @param <T>    源class
-     * @param <C>    目标class
-     * @return 目标Class类list集合
-     */
-    public static <T, C> List<C> copyToList(final List<T> sourceList, final Class<C> targetList) {
-        if(null == sourceList || 0 == sourceList.size()) {
-            return Collections.emptyList();
-        }
-        return sourceList.stream()
-                .map(t -> copyToObject(t, targetList))
-                .filter(Objects::nonNull)
-                .collect(Collectors.toList());
-    }
-
-    public static <T, C> C[] copyToArray(final List<T> sourceList, final Class<C> targetArr) {
-        if(null == sourceList || 0 == sourceList.size()) {
-            return (C[]) Array.newInstance(targetArr, 0);
-        }
-        return sourceList.stream()
-                .map(t -> copyToObject(t, targetArr))
-                .filter(Objects::nonNull)
-                .toArray(size -> (C[]) Array.newInstance(targetArr, size));
-    }
-
-    /**
-     * 复制对象为指定类型对象，对同名称同类型属性进行复制
-     *
-     * @param source 源对象
-     * @param target 目标Class类
-     * @param <T>    源class
-     * @param <C>    目标class
-     * @return 目标Class类对象
-     */
-    public static <T, C> C copyToObject(final T source, final Class<C> target) {
-        if(null == source) {
-            return null;
-        }
-        C obj;
-        try {
-            obj = target.newInstance();
-        } catch (InstantiationException | IllegalAccessException e) {
-            return null;
-        }
-        BeanCopier copier = copyMap.get(target);
-        if(null == copier) {
-            BeanCopier.Generator gen = new BeanCopier.Generator();
-            gen.setSource(source.getClass());
-            gen.setTarget(target);
-            copier = gen.create();
-            copyMap.put(target, copier);
-        }
-        copier.copy(source, obj, null);
-        return obj;
+    public static long getSize(Object obj) {
+        return instrumentation.getObjectSize(obj);
     }
 
     public static <C> Map<String, Object> getValues(List<C> list, Class<C> cClass) {
@@ -100,6 +39,7 @@ public class ObjectUtil {
         return valueMap;
     }
 
+    @SuppressWarnings("unchecked")
     private static <C> Map<String, Object> getValue(Object obj, Class<C> c, Integer size, int index) throws IllegalAccessException, ClassNotFoundException {
         if(null == obj) {
             return Collections.emptyMap();
@@ -154,6 +94,7 @@ public class ObjectUtil {
         }
     }
 
+    @SuppressWarnings("unchecked")
     private static <C> Map<String, Object> getValue(Object obj, Class<C> c, Integer size) throws IllegalAccessException, ClassNotFoundException {
         if(null == obj) {
             return Collections.emptyMap();
