@@ -17,7 +17,7 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * Created by xueyikang on 2016/11/22.
  */
-public class CommonUtil {
+public final class CommonUtil {
 
     private static final Unsafe THE_UNSAFE;
 

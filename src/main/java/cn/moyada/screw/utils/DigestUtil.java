@@ -42,10 +42,17 @@ public class DigestUtil {
         int length = bytes.length;
         StringBuilder str = new StringBuilder(length * 2);
         String item;
+        byte b;
         for (int index = 0; index < length; index++) {
-            item = Integer.toHexString(bytes[index] & 0XFF);
+            b = bytes[index];
+            if (b < 0) {
+                item = Integer.toHexString(b & 0xFF);
+            } else {
+                item = Integer.toHexString(b);
+            }
+
             if (item.length() == 1) {
-                str.append("0");
+                str.append('0');
             }
             str.append(item);
         }
@@ -91,7 +98,9 @@ public class DigestUtil {
     }
 
     public static void main(String[] args) throws IOException {
+        long start = System.nanoTime();
         System.out.println(fileToMD5("/Users/xueyikang/JavaProjects/screw/src/main/resources/redis.yaml"));
         System.out.println(getMD5("dsad4354354354354355as".getBytes()));
+        System.out.println(System.nanoTime() - start);
     }
 }

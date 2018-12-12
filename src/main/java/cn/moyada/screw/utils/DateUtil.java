@@ -11,7 +11,7 @@ import java.util.Date;
  * 时间工具类
  * Created by xueyikang on 2016/11/22.
  */
-public class DateUtil {
+public final class DateUtil {
 
     private static final ZoneId ZONE_ID = ZoneId.systemDefault();
 

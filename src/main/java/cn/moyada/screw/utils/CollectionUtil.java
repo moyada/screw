@@ -8,7 +8,7 @@ import java.util.stream.Stream;
  * @author xueyikang
  * @create 2018-03-12 14:12
  */
-public class CollectionUtil {
+public interface CollectionUtil {
 
     public static boolean isEmpty(Collection list) {
         return null == list || list.size() == 0;

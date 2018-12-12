@@ -15,7 +15,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 
-public class Http2Util {
+public final class Http2Util {
 
     private static ObjectPool<HttpClient> client = ObjectPoolFactory.newConcurrentPool(1, HttpClient::newHttpClient);
 

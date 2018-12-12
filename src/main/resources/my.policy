@@ -1,0 +1,17 @@
+grant codebase "file:${user.dir}/permission/-" {
+    permission java.io.FilePermission "${user.dir}/*", "write";
+};
+
+grant {
+	permission java.lang.RuntimePermission "setSecurityManager";
+	permission java.util.PropertyPermission "java.security.policy", "write";
+	permission java.util.PropertyPermission "os.name", "read";
+	permission java.util.PropertyPermission "user.home", "read";
+	permission java.util.PropertyPermission "user.dir", "read";
+};
+
+
+// grant {
+//    permission java.security.AllPermission;
+// };
+

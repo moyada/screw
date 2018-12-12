@@ -8,7 +8,61 @@ import java.lang.management.*;
  * @author xueyikang
  * @create 2018-07-12 19:42
  */
-public class JVMUtil {
+public final class JVMUtil {
+
+    public static void main(String[] args) {
+        System.out.println(getHeap());
+    }
+
+    public static String getVM() {
+//        CollectedHeap heap = VM.getVM().getUniverse().heap();
+//        if (heap instanceof GenCollectedHeap) {
+//            GenCollectedHeap gen0 = (GenCollectedHeap) heap;
+//
+//            Generation youngGen = gen0.getGen(0);
+//            if (youngGen instanceof ParNewGeneration) {
+//                ParNewGeneration young0 = (ParNewGeneration) youngGen;
+//                young0.eden();
+//                young0.from();
+//                young0.to();
+//
+//            } else if (youngGen instanceof DefNewGeneration) {
+//                DefNewGeneration young0 = (DefNewGeneration) youngGen;
+//                young0.eden();
+//                young0.from();
+//                young0.to();
+//
+//            } else {
+//
+//            }
+//            Generation oldGen = gen0.getGen(1);
+//            if (oldGen instanceof ConcurrentMarkSweepGeneration) {
+//                ConcurrentMarkSweepGeneration old0 = (ConcurrentMarkSweepGeneration) oldGen;
+//
+//
+//            } else if (oldGen instanceof TenuredGeneration) {
+//                TenuredGeneration old0 = (TenuredGeneration) oldGen;
+//
+//            } else {
+//
+//            }
+//
+//        } else if(heap instanceof ParallelScavengeHeap) {
+//            ParallelScavengeHeap gen0 = (ParallelScavengeHeap) heap;
+//
+//        } else if(heap instanceof G1CollectedHeap) {
+//            G1CollectedHeap gen0 = (G1CollectedHeap) heap;
+//            G1MonitoringSupport g1mm = gen0.g1mm();
+//
+//        } else if(heap instanceof ZCollectedHeap) {
+//            ZCollectedHeap gen0 = (ZCollectedHeap) heap;
+//
+//        } else if(heap instanceof EpsilonHeap) {
+//            EpsilonHeap gen0 = (EpsilonHeap) heap;
+//        }
+
+        return null;
+    }
 
     public static String getHeap() {
         MemoryMXBean memoryMXBean = ManagementFactory.getMemoryMXBean();

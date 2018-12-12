@@ -9,7 +9,7 @@ import java.util.Map;
  * @author xueyikang
  * @create 2018-02-25 15:33
  */
-public class ReflectUtil {
+public final class ReflectUtil {
 
     private static Map<String, SoftReference<Class<?>>> classMap = new HashMap<>();
     private static Map<String, SoftReference<Method>> methodMap = new HashMap<>();

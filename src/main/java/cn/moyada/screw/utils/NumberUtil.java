@@ -1,6 +1,6 @@
 package cn.moyada.screw.utils;
 
-public class NumberUtil {
+public final class NumberUtil {
 
     private static final byte[] NUMBER_ASCII = {48, 49, 50, 51, 52, 53, 54, 55, 56, 57};
 

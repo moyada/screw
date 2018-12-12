@@ -12,7 +12,7 @@ import java.util.Map;
  * @author xueyikang
  * @create 2018-06-25 15:41
  */
-public class ConcatUtil {
+public final class ConcatUtil {
 
     private static ObjectPool<StringBuilder> sbPool = ObjectPoolFactory.newPool(32, () -> new StringBuilder(64));
     

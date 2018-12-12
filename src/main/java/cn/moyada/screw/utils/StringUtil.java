@@ -8,9 +8,7 @@ import java.util.stream.Stream;
 /**
  * Created by xueyikang on 2017/2/23.
  */
-public class StringUtil {
-
-    private static String[] EMPTY_STRING_ARRAY = new String[0];
+public interface StringUtil {
 
     public static boolean isEmpty(String str) {
         if(null == str) {
@@ -36,7 +34,7 @@ public class StringUtil {
         StringTokenizer tokenizer = new StringTokenizer(str, sperater);
         int length = tokenizer.countTokens();
         if(0 == length) {
-            return EMPTY_STRING_ARRAY;
+            return new String[0];
         }
 
         String[] splits = new String[length];
@@ -93,7 +91,7 @@ public class StringUtil {
      */
     public static String[] filterEmpty(final String[] strs) {
         if(null == strs || 0 == strs.length) {
-            return EMPTY_STRING_ARRAY;
+            return new String[0];
         }
         return Arrays.stream(strs)
                 .filter(str -> !StringUtil.isEmpty(str))

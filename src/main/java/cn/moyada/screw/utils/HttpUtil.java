@@ -24,7 +24,7 @@ import java.util.Map;
  * @author xueyikang
  * @create 2018-03-20 17:13
  */
-public class HttpUtil {
+public final class HttpUtil {
 
 //    private static final HttpClient instance = new SSLClient();
     private static final HttpClient instance = HttpClientBuilder.create().build();

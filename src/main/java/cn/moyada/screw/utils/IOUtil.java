@@ -16,7 +16,7 @@ import java.util.stream.Stream;
  * 文件读取流
  * Created by xueyikang on 2017/12/12.
  */
-public class IOUtil {
+public interface IOUtil {
 
     public static String read(InputStream in) {
         if(null == in) {

@@ -9,7 +9,7 @@ import java.util.Properties;
  * @author xueyikang
  * @create 2018-03-15 14:32
  */
-public class EmailUtil {
+public final class EmailUtil {
 
     private static final String TO = "xxxxxx@163.com";
 

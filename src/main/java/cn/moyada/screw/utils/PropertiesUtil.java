@@ -9,7 +9,7 @@ import java.util.Properties;
  * @author xueyikang
  * @create 2018-05-18 22:29
  */
-public class PropertiesUtil {
+public interface PropertiesUtil {
 
     public static String get(String key, String propertiesFile) {
         Properties properties = System.getProperties();

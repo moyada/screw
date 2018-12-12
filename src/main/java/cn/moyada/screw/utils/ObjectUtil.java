@@ -2,8 +2,8 @@ package cn.moyada.screw.utils;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import org.openjdk.jol.info.ClassLayout;
 
-import java.lang.instrument.Instrumentation;
 import java.lang.reflect.Field;
 import java.lang.reflect.Type;
 import java.util.Collections;
@@ -14,12 +14,10 @@ import java.util.Objects;
 /**
  * Created by xueyikang on 2017/2/17.
  */
-public class ObjectUtil {
-
-    private static Instrumentation instrumentation;
+public interface ObjectUtil {
 
     public static long getSize(Object obj) {
-        return instrumentation.getObjectSize(obj);
+        return ClassLayout.parseInstance(obj).instanceSize();
     }
 
     public static <C> Map<String, Object> getValues(List<C> list, Class<C> cClass) {

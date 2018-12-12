@@ -8,7 +8,7 @@ import java.lang.management.ManagementFactory;
  * @author xueyikang
  * @create 2018-04-13 10:30
  */
-public class RuntimeUtil {
+public interface RuntimeUtil {
 
     /**
      * 获取FullGC次数

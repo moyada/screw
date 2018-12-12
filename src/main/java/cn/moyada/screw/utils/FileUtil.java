@@ -12,7 +12,7 @@ import java.util.EnumSet;
  * @author xueyikang
  * @create 2018-03-25 20:55
  */
-public class FileUtil {
+public final class FileUtil {
     
     public static boolean createFile(String filePath) {
         return createFile(Paths.get(filePath));

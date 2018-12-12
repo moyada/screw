@@ -10,7 +10,7 @@ import java.util.concurrent.TimeUnit;
  * @author xueyikang
  * @create 2018-06-25 17:21
  */
-public class StopwatchUtil {
+public final class StopwatchUtil {
 
     private static ObjectPool<Stopwatch> executor = ObjectPoolFactory.newConcurrentPool(10, Stopwatch::createUnstarted);
 
